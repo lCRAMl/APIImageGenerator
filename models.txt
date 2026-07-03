@@ -1,0 +1,1840 @@
+Seedream4.0 - Edit
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "bytedance/seedream-v4-edit",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "Refer to this logo and create a single visual showcase for an outdoor sports brand named ‘KIE AI’. Display five branded items together in one image: a packaging bag, a hat, a carton box, a wristband, and a lanyard. Use blue as the main visual color, with a fun, simple, and modern style.",
+        "image_urls": [
+            "https://file.aiquickdraw.com/custom-page/akr/section-images/1757930552966e7f2on7s.png"
+        ],
+        "image_size": "square_hd",
+        "image_resolution": "1K",
+        "max_images": 1,
+        "seed": 80960659,
+        "nsfw_checker": true
+    }
+}'
+
+Bearer Token
+Provide your bearer token in the Authorization
+header when making requests to protected resources.
+Example:
+Authorization: Bearer ********************
+
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be bytedance/seedream-v4-edit for this endpoint
+Value:
+bytedance/seedream-v4-edit
+Default:
+bytedance/seedream-v4-edit
+Example:
+bytedance/seedream-v4-edit
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+prompt
+string 
+required
+The text prompt used to edit the image (Max length: 5000 characters)
+<= 5000 characters
+Example:
+Refer to this logo and create a single visual showcase for an outdoor sports brand named ‘KIE AI’. Display five branded items together in one image: a packaging bag, a hat, a carton box, a wristband, and a lanyard. Use blue as the main visual color, with a fun, simple, and modern style.
+image_urls
+array[string <uri>]
+required
+List of URLs of input images for editing. Presently, up to 10 image inputs are allowed. (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+<= 10 items
+Example:
+["https://file.aiquickdraw.com/custom-page/akr/section-images/1757930552966e7f2on7s.png"]
+image_size
+enum<string> 
+optional
+The size of the generated image.
+Allowed values:
+squaresquare_hdportrait_4_3portrait_3_2portrait_16_9landscape_4_3landscape_3_2landscape_16_9landscape_21_9
+Default:
+square_hd
+Example:
+square_hd
+image_resolution
+enum<string> 
+optional
+Final image resolution is determined by combining image_size (aspect ratio) and image_resolution (pixel scale). For example, choosing 4:3 + 4K gives 4096 × 3072px
+Allowed values:
+1K2K4K
+Default:
+1K
+Example:
+1K
+max_images
+number 
+optional
+Set this value (1–6) to cap how many images a single generation run can produce in one set—because they’re created in one shot rather than separate requests, you must also state the exact number you want in the prompt so both settings align. (Min: 1, Max: 6, Step: 1) (step: 1)
+>= 1<= 6
+Default:
+1
+Example:
+1
+seed
+integer 
+optional
+Random seed to control the stochasticity of image generation.
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+🔴500Error 
+
+
+
+
+
+Seedream4.5 - Edit
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "seedream/4.5-edit",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "Keep the model'\''s pose and the flowing shape of the liquid dress unchanged. Change the clothing material from silver metal to completely transparent clear water (or glass). Through the liquid water, the model'\''s skin details are visible. Lighting changes from reflection to refraction.",
+        "image_urls": [
+            "https://static.aiquickdraw.com/tools/example/1764851484363_ScV1s2aq.webp"
+        ],
+        "aspect_ratio": "1:1",
+        "quality": "basic",
+        "nsfw_checker": true
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be seedream/4.5-edit for this endpoint
+Value:
+seedream/4.5-edit
+Default:
+seedream/4.5-edit
+Example:
+seedream/4.5-edit
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+prompt
+string 
+required
+A text description of the image you want to generate (Max length: 3000 characters)
+<= 3000 characters
+Example:
+Keep the model's pose and the flowing shape of the liquid dress unchanged. Change the clothing material from silver metal to completely transparent clear water (or glass). Through the liquid water, the model's skin details are visible. Lighting changes from reflection to refraction.
+image_urls
+array[string <uri>]
+required
+Upload an image file to use as input for the API (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+<= 14 items
+Example:
+["https://static.aiquickdraw.com/tools/example/1764851484363_ScV1s2aq.webp"]
+aspect_ratio
+enum<string> 
+required
+Width-height ratio of the image, determining its visual form.
+Allowed values:
+1:14:33:416:99:162:33:221:9
+Default:
+1:1
+Example:
+1:1
+quality
+enum<string> 
+required
+Basic outputs 2K images, while High outputs 4K images.
+Allowed values:
+basichigh
+Default:
+basic
+Example:
+basic
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+🔴500Error 
+
+
+
+
+Seedream5.0 Lite - Image to Image
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "seedream/5-lite-image-to-image",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "Keep the model'\''s pose and the flowing shape of the liquid dress unchanged. Change the clothing material from silver metal to completely transparent clear water (or glass). Through the liquid water, the model'\''s skin details are visible. Lighting changes from reflection to refraction.",
+        "image_urls": [
+            "https://static.aiquickdraw.com/tools/example/1764851484363_ScV1s2aq.webp"
+        ],
+        "aspect_ratio": "1:1",
+        "quality": "basic",
+        "nsfw_checker": true
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be seedream/5-lite-image-to-image for this endpoint
+Value:
+seedream/5-lite-image-to-image
+Default:
+seedream/5-lite-image-to-image
+Example:
+seedream/5-lite-image-to-image
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+prompt
+string 
+required
+A text description of the image you want to generate (Max length: 3-3000 characters)
+>= 3 characters<= 3000 characters
+Example:
+Keep the model's pose and the flowing shape of the liquid dress unchanged. Change the clothing material from silver metal to completely transparent clear water (or glass). Through the liquid water, the model's skin details are visible. Lighting changes from reflection to refraction.
+image_urls
+array[string <uri>]
+required
+Upload an image file to use as input for the API (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+<= 14 items
+Example:
+["https://static.aiquickdraw.com/tools/example/1764851484363_ScV1s2aq.webp"]
+aspect_ratio
+enum<string> 
+required
+Width-height ratio of the image, determining its visual form.
+Allowed values:
+1:14:33:416:99:162:33:221:9
+Default:
+1:1
+Example:
+1:1
+quality
+enum<string> 
+required
+Basic outputs 2K images, while High outputs 4K images.
+Allowed values:
+basichigh
+Default:
+basic
+Example:
+basic
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Examples
+Responses
+🟢200成功
+application/json
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+🔴500Error 
+
+
+
+
+Google - Nano Banana 2
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "nano-banana-2",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "Comic poster: cool banana hero in shades leaps from sci-fi pad. Six panels: 1) 4K mountain landscape, 2) banana holds page of long multilingual text with auto translation, 3) Gemini 3 hologram for search/knowledge/reasoning, 4) camera UI sliders for angle focus color, 5) frame trio 1:1-9:16, 6) consistent banana poses. Footer shows Google icons. Tagline: Nano Banana Pro now on Kie AI.",
+        "image_input": [],
+        "aspect_ratio": "auto",
+        "resolution": "1K",
+        "output_format": "png"
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be nano-banana-2 for this endpoint
+Value:
+nano-banana-2
+Default:
+nano-banana-2
+Example:
+nano-banana-2
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+required
+Input parameters for the generation task
+prompt
+string 
+required
+A text description of the image you want to generate (Max length: 20000 characters)
+<= 20000 characters
+Example:
+Comic poster: cool banana hero in shades leaps from sci-fi pad. Six panels: 1) 4K mountain landscape, 2) banana holds page of long multilingual text with auto translation, 3) Gemini 3 hologram for search/knowledge/reasoning, 4) camera UI sliders for angle focus color, 5) frame trio 1:1-9:16, 6) consistent banana poses. Footer shows Google icons. Tagline: Nano Banana Pro now on Kie AI.
+image_input
+array[string <uri>]
+optional
+Input images to transform or use as reference (supports up to 14 images) (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 30.0MB)
+<= 14 items
+Example:
+[]
+aspect_ratio
+enum<string> 
+optional
+Aspect ratio of the generated image
+Allowed values:
+1:11:41:82:33:23:44:14:34:55:48:19:1616:921:9auto
+Default:
+auto
+Example:
+1:1
+resolution
+enum<string> 
+optional
+Resolution of the generated image
+Allowed values:
+1K2K4K
+Default:
+1K
+Example:
+1K
+output_format
+enum<string> 
+optional
+Format of the output image
+Allowed values:
+pngjpg
+Default:
+jpg
+Example:
+jpg
+Examples
+Responses
+🟢200成功
+application/json
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+🔴500Error 
+
+
+
+Google - Nano Banana Edit
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "google/nano-banana-edit",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "turn this photo into a character figure. Behind it, place a box with the character’s image printed on it, and a computer showing the Blender modeling process on its screen. In front of the box, add a round plastic base with the character figure standing on it. set the scene indoors if possible",
+        "image_urls": [
+            "https://file.aiquickdraw.com/custom-page/akr/section-images/1756223420389w8xa2jfe.png"
+        ],
+        "output_format": "png",
+        "image_size": "1:1"
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be google/nano-banana-edit for this endpoint
+Value:
+google/nano-banana-edit
+Default:
+google/nano-banana-edit
+Example:
+google/nano-banana-edit
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+prompt
+string 
+required
+The prompt for image editing (Max length: 5000 characters)
+<= 5000 characters
+Example:
+turn this photo into a character figure. Behind it, place a box with the character’s image printed on it, and a computer showing the Blender modeling process on its screen. In front of the box, add a round plastic base with the character figure standing on it. set the scene indoors if possible
+image_urls
+array[string <uri>]
+required
+List of URLs of input images for editing,up to 10 images. (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+<= 10 items
+Example:
+["https://file.aiquickdraw.com/custom-page/akr/section-images/1756223420389w8xa2jfe.png"]
+output_format
+enum<string> 
+optional
+Output format for the images
+Allowed values:
+pngjpeg
+Default:
+png
+Example:
+png
+image_size
+enum<string> 
+optional
+Radio description
+Allowed values:
+1:19:1616:93:44:33:22:35:44:521:9auto
+Default:
+1:1
+Example:
+1:1
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+🔴500Error 
+
+
+
+Google - Nano Banana Pro
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "nano-banana-pro",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "Comic poster: cool banana hero in shades leaps from sci-fi pad. Six panels: 1) 4K mountain landscape, 2) banana holds page of long multilingual text with auto translation, 3) Gemini 3 hologram for search/knowledge/reasoning, 4) camera UI sliders for angle focus color, 5) frame trio 1:1-9:16, 6) consistent banana poses. Footer shows Google icons. Tagline: Nano Banana Pro now on Kie AI.",
+        "image_input": [],
+        "aspect_ratio": "1:1",
+        "resolution": "1K",
+        "output_format": "png"
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be nano-banana-pro for this endpoint
+Value:
+nano-banana-pro
+Default:
+nano-banana-pro
+Example:
+nano-banana-pro
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+prompt
+string 
+required
+A text description of the image you want to generate (Max length: 10000 characters)
+<= 10000 characters
+Example:
+Comic poster: cool banana hero in shades leaps from sci-fi pad. Six panels: 1) 4K mountain landscape, 2) banana holds page of long multilingual text with auto translation, 3) Gemini 3 hologram for search/knowledge/reasoning, 4) camera UI sliders for angle focus color, 5) frame trio 1:1-9:16, 6) consistent banana poses. Footer shows Google icons. Tagline: Nano Banana Pro now on Kie AI.
+image_input
+array[string <uri>]
+optional
+Input images to transform or use as reference (supports up to 8 images) (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 30.0MB)
+<= 8 items
+Example:
+[]
+aspect_ratio
+enum<string> 
+optional
+Aspect ratio of the generated image
+Allowed values:
+1:12:33:23:44:34:55:49:1616:921:9auto
+Default:
+1:1
+Example:
+1:1
+resolution
+enum<string> 
+optional
+Resolution of the generated image
+Allowed values:
+1K2K4K
+Default:
+1K
+Example:
+1K
+output_format
+enum<string> 
+optional
+Format of the output image
+Allowed values:
+pngjpg
+Default:
+png
+Example:
+png
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+🔴500Error 
+
+
+Flux-2 - Pro Image to Image
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "flux-2/pro-image-to-image",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "input_urls": [
+            "https://static.aiquickdraw.com/tools/example/1764235041265_kjJ2sTMR.png",
+            "https://static.aiquickdraw.com/tools/example/1764235045490_9SjAUr4Z.png"
+        ],
+        "prompt": "The jar in image 1 is filled with capsules exactly same as image 2 with the exact logo",
+        "aspect_ratio": "1:1",
+        "resolution": "1K",
+        "nsfw_checker": false
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be flux-2/pro-image-to-image for this endpoint
+Value:
+flux-2/pro-image-to-image
+Default:
+flux-2/pro-image-to-image
+Example:
+flux-2/pro-image-to-image
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+input_urls
+array[string <uri>]
+required
+Input reference images (1-8 images). (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+<= 8 items
+Example:
+["https://static.aiquickdraw.com/tools/example/1764235041265_kjJ2sTMR.png","https://static.aiquickdraw.com/tools/example/1764235045490_9SjAUr4Z.png"]
+prompt
+string 
+required
+Must be between 3 and 5000 characters. (Max length: 5000 characters)
+<= 5000 characters
+Example:
+The jar in image 1 is filled with capsules exactly same as image 2 with the exact logo
+aspect_ratio
+enum<string> 
+required
+Aspect ratio for the generated image. Select 'auto' to match the first input image ratio (requires input image).
+Allowed values:
+1:14:33:416:99:163:22:3auto
+Default:
+1:1
+Example:
+1:1
+resolution
+enum<string> 
+required
+Output image resolution.
+Allowed values:
+1K2K
+Default:
+1K
+Example:
+1K
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+
+
+
+
+Flux-2 - Image to Image
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "flux-2/flex-image-to-image",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "input_urls": [
+            "https://static.aiquickdraw.com/tools/example/1764235158281_tABmx723.png",
+            "https://static.aiquickdraw.com/tools/example/1764235165079_8fIR5MEF.png"
+        ],
+        "prompt": "Replace the can in image 2 with the can from image 1",
+        "aspect_ratio": "1:1",
+        "resolution": "1K",
+        "nsfw_checker": false
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be flux-2/flex-image-to-image for this endpoint
+Value:
+flux-2/flex-image-to-image
+Default:
+flux-2/flex-image-to-image
+Example:
+flux-2/flex-image-to-image
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+input_urls
+array[string <uri>]
+required
+Input reference images (1-8 images). (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+<= 8 items
+Example:
+["https://static.aiquickdraw.com/tools/example/1764235158281_tABmx723.png","https://static.aiquickdraw.com/tools/example/1764235165079_8fIR5MEF.png"]
+prompt
+string 
+required
+Must be between 3 and 5000 characters. (Max length: 5000 characters)
+<= 5000 characters
+Example:
+Replace the can in image 2 with the can from image 1
+aspect_ratio
+enum<string> 
+required
+Aspect ratio for the generated image. Select 'auto' to match the first input image ratio (requires input image).
+Allowed values:
+1:14:33:416:99:163:22:3auto
+Default:
+1:1
+Example:
+1:1
+resolution
+enum<string> 
+required
+Output image resolution.
+Allowed values:
+1K2K
+Default:
+1K
+Example:
+1K
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+
+
+
+Grok Imagine - image to image
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "grok-imagine/image-to-image",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "Recreate the Titanic movie poster with two adorable anthropomorphic cats in the same romantic pose at the bow of the ship. The male cat is an orange tabby wearing a vest, standing behind a white long-haired female cat in a lace dress, holding her paws as they stretch forward in the wind. Both cats are photorealistic with detailed fur, wind-swept hair, and dramatic sunset lighting (warm golden highlights, cool blue shadows). Background: the Titanic ship at dusk with four smokestacks, glowing deck lights, calm ocean, and orange-pink sunset sky. Center title: “CATANIC” in the same gold metallic serif style as Titanic, same size and position.",
+        "image_urls": [
+            "https://static.aiquickdraw.com/tools/example/1767602105243_0MmMCrwq.png"
+        ]
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be grok-imagine/image-to-image for this endpoint
+Value:
+grok-imagine/image-to-image
+Default:
+grok-imagine/image-to-image
+Example:
+grok-imagine/image-to-image
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+prompt
+string 
+optional
+A text description specifying the desired content or style of the generated image. (Max length: 390000 characters)
+<= 390000 characters
+Example:
+Recreate the Titanic movie poster with two adorable anthropomorphic cats in the same romantic pose at the bow of the ship. The male cat is an orange tabby wearing a vest, standing behind a white long-haired female cat in a lace dress, holding her paws as they stretch forward in the wind. Both cats are photorealistic with detailed fur, wind-swept hair, and dramatic sunset lighting (warm golden highlights, cool blue shadows). Background: the Titanic ship at dusk with four smokestacks, glowing deck lights, calm ocean, and orange-pink sunset sky. Center title: “CATANIC” in the same gold metallic serif style as Titanic, same size and position.
+image_urls
+array[string <uri>]
+required
+An array containing up to 1 URL string pointing to reference images. (Use file URLs after upload, not raw file content. Accepted types: image/jpeg, image/png, image/webp. Max size: 10.0MB per image.) In your prompt, reference the uploaded image by typing @image(n) followed by a space (for example: @image1 a sunset over the ocean).
+<= 5 items
+Example:
+["https://static.aiquickdraw.com/tools/example/1767602105243_0MmMCrwq.png"]
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Default:
+false
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+
+
+GPT Image-1.5 - Image to Image
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "gpt-image/1.5-image-to-image",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "input_urls": [
+            "https://static.aiquickdraw.com/tools/example/1765962794374_GhtqB9oX.webp"
+        ],
+        "prompt": "Edit the image to dress the woman using the provided clothing images. Preserve her exact likeness, expression, hairstyle, and proportions. Replace only the clothing, fitting the garments naturally to her existing pose and body geometry with realistic fabric behavior. Match lighting, shadows, and color temperature to the original photo so the outfit integrates photorealistically, without looking pasted on.",
+        "aspect_ratio": "3:2",
+        "quality": "medium"
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be gpt-image/1.5-image-to-image for this endpoint
+Value:
+gpt-image/1.5-image-to-image
+Default:
+gpt-image/1.5-image-to-image
+Example:
+gpt-image/1.5-image-to-image
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+input_urls
+array[string <uri>]
+required
+Upload an image file to use as input for the API (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+<= 16 items
+Example:
+["https://static.aiquickdraw.com/tools/example/1765962794374_GhtqB9oX.webp"]
+prompt
+string 
+required
+A text description of the image you want to generate
+Example:
+Edit the image to dress the woman using the provided clothing images. Preserve her exact likeness, expression, hairstyle, and proportions. Replace only the clothing, fitting the garments naturally to her existing pose and body geometry with realistic fabric behavior. Match lighting, shadows, and color temperature to the original photo so the outfit integrates photorealistically, without looking pasted on.
+aspect_ratio
+enum<string> 
+required
+Width-height ratio of the image, determining its visual form.
+Allowed values:
+1:12:33:2
+Default:
+3:2
+Example:
+3:2
+quality
+enum<string> 
+required
+Quality: medium=balanced, high=slow/detailed.
+Allowed values:
+mediumhigh
+Default:
+medium
+Example:
+medium
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+
+
+Qwen - Image to Image
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "qwen/image-to-image",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "",
+        "image_url": "",
+        "strength": 0.8,
+        "output_format": "png",
+        "acceleration": "none",
+        "negative_prompt": "blurry, ugly",
+        "num_inference_steps": 30,
+        "guidance_scale": 2.5,
+        "enable_safety_checker": true
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be qwen/image-to-image for this endpoint
+Value:
+qwen/image-to-image
+Default:
+qwen/image-to-image
+Example:
+qwen/image-to-image
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+prompt
+string 
+required
+The prompt to generate the image with (Max length: 5000 characters)
+<= 5000 characters
+Example:
+image_url
+string 
+required
+The reference image to guide the generation (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+Example:
+strength
+number 
+optional
+Denoising strength. 1.0 = fully remake; 0.0 = preserve original (Min: 0, Max: 1, Step: 0.01) (step: 0.01)
+>= 0<= 1
+Default:
+0.8
+Example:
+0.8
+output_format
+enum<string> 
+optional
+The format of the generated image
+Allowed values:
+pngjpeg
+Default:
+png
+Example:
+png
+acceleration
+enum<string> 
+optional
+Acceleration level for image generation. Options: 'none', 'regular', 'high'. Higher acceleration increases speed. 'regular' balances speed and quality. 'high' is recommended for images without text
+Allowed values:
+noneregularhigh
+Default:
+none
+Example:
+none
+negative_prompt
+string 
+optional
+The negative prompt for the generation (Max length: 500 characters)
+<= 500 characters
+Example:
+blurry, ugly
+seed
+integer 
+optional
+The same seed and the same prompt given to the same version of the model will output the same image every time
+num_inference_steps
+number 
+optional
+The number of inference steps to perform (Min: 2, Max: 250, Step: 1) (step: 1)
+>= 2<= 250
+Default:
+30
+Example:
+30
+guidance_scale
+number 
+optional
+The CFG (Classifier Free Guidance) scale is a measure of how close you want the model to stick to your prompt when looking for a related image to show you (Min: 0, Max: 20, Step: 0.1) (step: 0.1)
+>= 0<= 20
+Default:
+2.5
+Example:
+2.5
+enable_safety_checker
+boolean 
+optional
+The safety checker is always enabled in Playground. It can only be disabled by setting false through the API. (Boolean value (true/false))
+Example:
+true
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Default:
+false
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+
+
+
+Qwen2 - Image Edit
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "qwen2/image-edit",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "",
+        "image_url": "https://file.aiquickdraw.com/custom-page/akr/section-images/1755603225969i6j87xnw.jpg",
+        "image_size": "16:9",
+        "output_format": "png",
+        "seed": 0
+    }
+}'
+model
+enum<string> 
+required
+The model name to use for generation. Required field.
+Must be qwen2/image-edit for this endpoint
+Value:
+qwen2/image-edit
+Default:
+qwen2/image-edit
+Example:
+qwen2/image-edit
+callBackUrl
+string <uri>
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+optional
+Input parameters for the generation task
+prompt
+string 
+required
+The prompt to generate the image with (Max length: 800 characters)
+<= 800 characters
+Example:
+image_url
+string 
+required
+The URL of the image to edit. (File URL after upload, not file content; Accepted types: image/jpeg, image/png, image/webp; Max size: 10.0MB)
+Example:
+https://file.aiquickdraw.com/custom-page/akr/section-images/1755603225969i6j87xnw.jpg
+image_size
+enum<string> 
+optional
+The size of the generated image. Default value: 16:9
+Allowed values:
+1:12:33:23:44:39:1616:921:9
+Default:
+16:9
+Example:
+16:9
+seed
+integer 
+optional
+The same seed and the same prompt given to the same version of the model will output the same image every time.
+output_format
+enum<string> 
+optional
+The format of the generated image. Default value: "png"
+Allowed values:
+jpegpng
+Default:
+png
+Example:
+png
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Default:
+false
+Examples
+Responses
+🟢200
+application/json
+Request successful
+Body
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+
+
+Wan 2.7 Image
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "wan/2-7-image",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "Transform the food photo by replacing the marked ingredients with sliced red chili pieces in the corresponding positions, while keeping the same bowl, composition, steam, lighting, camera angle, background, texture, and overall realism.",
+        "input_urls": [
+            "https://static.aiquickdraw.com/tools/example/1775122744247_eSHwJX1k.jpg"
+        ],
+        "n": 4,
+        "enable_sequential": false,
+        "resolution": "2K",
+        "thinking_mode": false,
+        "watermark": false,
+        "seed": 0,
+        "bbox_list": [
+            []
+        ]
+    }
+}'
+model
+enum<string> 
+required
+Model name for generation tasks. This endpoint currently uses wan/2-7-image.
+Value:
+wan/2-7-image
+Default:
+wan/2-7-image
+Example:
+wan/2-7-image
+callBackUrl
+string <uri>(CallbackUrl)
+CallbackUrl
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+required
+Input parameters for the generation task
+Example:
+{"prompt":"Transform the food photo by replacing the marked ingredients with sliced red chili pieces in the corresponding positions, while keeping the same bowl, composition, steam, lighting, camera angle, background, texture, and overall realism.","input_urls":["https://static.aiquickdraw.com/tools/example/1775122744247_eSHwJX1k.jpg"],"n":4,"enable_sequential":false,"resolution":"2K","thinking_mode":false,"watermark":false,"seed":0,"bbox_list":[[]]}
+prompt
+string 
+required
+Prompt for image generation or editing. This field supports both Chinese and English, with a maximum length of 5000 characters as per Alibaba Cloud documentation.
+<= 5000 characters
+Example:
+Transform the food photo by replacing the marked ingredients with sliced red chili pieces while preserving the bowl, lighting, steam, camera angle, and overall realism.
+input_urls
+array[string <uri>]
+optional
+(Optional) Array of input image URLs. The current project uses input_urls as a wrapper field.
+<= 9 items
+Example:
+["https://static.aiquickdraw.com/tools/example/1775122744247_eSHwJX1k.jpg"]
+aspect_ratio
+enum<string> 
+optional
+(Optional) Output aspect ratio when no image input is provided. When input_urls is present, the frontend will hide and not pass this field.
+Allowed values:
+1:116:94:321:93:49:168:1 1:8
+Example:
+1:1
+enable_sequential
+boolean 
+optional
+Whether to enable sequential/group image mode. Default is false.
+Default:
+false
+Example:
+false
+n
+integer 
+optional
+Number of images to generate. Range is 1-4 when enable_sequential=false (default: 4); range is 1-12 when enable_sequential=true (default: 12).
+Example:
+4
+resolution
+enum<string> 
+optional
+Output resolution. The current project uses resolution as a wrapper field corresponding to the underlying resolution parameter.
+Allowed values:
+1K2K4K
+Default:
+2K
+Example:
+2K
+thinking_mode
+boolean 
+optional
+Whether to enable thinking mode. Only available when enable_sequential=false and input_urls is empty; the frontend will automatically disable it in other cases.
+Default:
+false
+Example:
+false
+color_palette
+array [object] 
+optional
+(Optional) Custom color theme. Only available when enable_sequential=false. Requires 3-10 colors, 8 recommended.
+>= 3 items<= 10 items
+bbox_list
+array [array] 
+optional
+(Optional) Interactive editing bounding box areas. The outer list length should match input_urls; maximum 2 boxes per image; single box format is [x1, y1, x2, y2].
+Example:
+[[]]
+watermark
+boolean 
+optional
+Whether to add watermark.
+Default:
+false
+Example:
+false
+seed
+integer 
+optional
+Random seed, range 0-2147483647.
+>= 0<= 2147483647
+Default:
+0
+Example:
+0
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Default:
+false
+Examples
+Responses
+🟢200成功
+application/json
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+🔴500Error 
+
+
+Wan 2.7 Image Pro
+curl --location --request POST 'https://api.kie.ai/api/v1/jobs/createTask' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "model": "wan/2-7-image-pro",
+    "callBackUrl": "https://your-domain.com/api/callback",
+    "input": {
+        "prompt": "Transform the food photo by replacing the marked ingredients with sliced red chili pieces in the corresponding positions, while keeping the same bowl, composition, steam, lighting, camera angle, background, texture, and overall realism.",
+        "input_urls": [
+            "https://static.aiquickdraw.com/tools/example/1775122744247_eSHwJX1k.jpg"
+        ],
+        "n": 4,
+        "enable_sequential": false,
+        "resolution": "2K",
+        "thinking_mode": false,
+        "watermark": false,
+        "seed": 0,
+        "bbox_list": [
+            []
+        ]
+    }
+}'
+model
+enum<string> 
+required
+Model name for generation tasks. This endpoint currently uses wan/2-7-image-pro.
+Value:
+wan/2-7-image-pro
+Default:
+wan/2-7-image-pro
+Example:
+wan/2-7-image-pro
+callBackUrl
+string <uri>(CallbackUrl)
+CallbackUrl
+optional
+The URL to receive generation task completion updates. Optional but recommended for production use.
+System will POST task status and results to this URL when generation completes
+Callback includes generated content URLs and task information
+Your callback endpoint should accept POST requests with JSON payload containing results
+Alternatively, use the Get Task Details endpoint to poll task status
+To ensure callback security, see Webhook Verification Guide for signature verification implementation
+Example:
+https://your-domain.com/api/callback
+input
+object 
+required
+Input parameters for the generation task
+Example:
+{"prompt":"Transform the food photo by replacing the marked ingredients with sliced red chili pieces in the corresponding positions, while keeping the same bowl, composition, steam, lighting, camera angle, background, texture, and overall realism.","input_urls":["https://static.aiquickdraw.com/tools/example/1775122744247_eSHwJX1k.jpg"],"n":4,"enable_sequential":false,"resolution":"2K","thinking_mode":false,"watermark":false,"seed":0,"bbox_list":[[]]}
+prompt
+string 
+required
+Prompt for image generation or editing. This field supports both Chinese and English, with a maximum length of 5000 characters as per Alibaba Cloud documentation.
+<= 5000 characters
+Example:
+Transform the food photo by replacing the marked ingredients with sliced red chili pieces while preserving the bowl, lighting, steam, camera angle, and overall realism.
+input_urls
+array[string <uri>]
+optional
+(Optional) Array of input image URLs. The current project uses input_urls as a wrapper field.
+<= 9 items
+Example:
+["https://static.aiquickdraw.com/tools/example/1775122744247_eSHwJX1k.jpg"]
+aspect_ratio
+enum<string> 
+optional
+(Optional) Output aspect ratio when no image input is provided. When input_urls is present, the frontend will hide and not pass this field.
+Allowed values:
+1:116:94:321:93:49:168:1 1:8
+Example:
+1:1
+enable_sequential
+boolean 
+optional
+Whether to enable sequential/group image mode. Default is false.
+Default:
+false
+Example:
+false
+n
+integer 
+optional
+Number of images to generate. Range is 1-4 when enable_sequential=false (default: 4); range is 1-12 when enable_sequential=true (default: 12).
+Example:
+4
+resolution
+enum<string> 
+optional
+Output resolution. The current project uses resolution as a wrapper field corresponding to the underlying resolution parameter.(4K generation is available only for text-to-image in Standard Mode)
+Allowed values:
+1K2K4K
+Default:
+2K
+Example:
+2K
+thinking_mode
+boolean 
+optional
+Whether to enable thinking mode. Only available when enable_sequential=false and input_urls is empty; the frontend will automatically disable it in other cases.
+Default:
+false
+Example:
+false
+color_palette
+array [object] 
+optional
+(Optional) Custom color theme. Only available when enable_sequential=false. Requires 3-10 colors, 8 recommended.
+>= 3 items<= 10 items
+bbox_list
+array [array] 
+optional
+(Optional) Interactive editing bounding box areas. The outer list length should match input_urls; maximum 2 boxes per image; single box format is [x1, y1, x2, y2].
+Example:
+[[]]
+watermark
+boolean 
+optional
+Whether to add watermark.
+Default:
+false
+Example:
+false
+seed
+integer 
+optional
+Random seed, range 0-2147483647.
+>= 0<= 2147483647
+Default:
+0
+Example:
+0
+nsfw_checker
+boolean 
+optional
+Defaults to false. You can set it to false based on your needs. If set to false, our content filtering will be disabled, and all results will be returned directly by the model itself.
+Default:
+false
+Examples
+Responses
+🟢200成功
+application/json
+code
+enum<integer> 
+optional
+Response status code
+200: Success - Request has been processed successfully
+401: Unauthorized - Authentication credentials are missing or invalid
+402: Insufficient Credits - Account does not have enough credits to perform the operation
+404: Not Found - The requested resource or endpoint does not exist
+422: Validation Error - The request parameters failed validation checks
+429: Rate Limited - Request limit has been exceeded for this resource
+433: Request Limit - Sub-key Usage Exceeds Limit
+455: Service Unavailable - System is currently undergoing maintenance
+500: Server Error - An unexpected error occurred while processing the request
+501: Generation Failed - Content generation task failed
+505: Feature Disabled - The requested feature is currently disabled
+Allowed values:
+200401402404422429433455500501505
+msg
+string 
+optional
+Response message, error description when failed
+Example:
+success
+data
+object 
+required
+taskId
+string 
+required
+Task ID, can be used with Get Task Details endpoint to query task status
+🔴500Error 

@@ -1,0 +1,37 @@
+GeminiAPI/
+│
+├─ main.py                    # Einstiegspunkt / UI-Zusammenbau
+├─ config.py                  # config.ini Handling
+├─ resource_utils.py          # resource_path(), PyInstaller-Helfer
+│
+├─ api/
+│   ├─ __init__.py
+│   ├─ nanobanana.py          # NanoBananaAPI
+│   └─ imgbb.py               # Imgbb / Upload Logik
+│
+├─ ui/
+│   ├─ __init__.py
+│   ├─ main_window.py         # MainWindow-Klasse
+│   ├─ loading_overlay.py     # LoadingOverlay*, Gemini Sterne
+│   ├─ reference_thumb.py     # ReferenceThumb
+│   └─ prompt_editor.py       # QTextEdit + Highlighter
+│
+├─ highlight/
+│   ├─ __init__.py
+│   └─ prompt_highlighter.py  # QSyntaxHighlighter
+│
+├─ assets/
+│   ├─ gemini_icon.ico
+│   ├─ gemini_symbol.png
+│
+├─ config.ini
+└─ requirements.txt
+
+
+
+
+main.py
+ ├─ config.py              → Quelle aller Defaults & User-Settings
+ ├─ prompt_editor.py       → UI-Komponente (QTextEdit + Komfort)
+ └─ highlight/
+     └─ prompt_highlighter.py → reines Syntax-Highlighting
