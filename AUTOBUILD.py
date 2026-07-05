@@ -1,7 +1,11 @@
+#AUTOBUILD.py
+
+from ensurepip import version
 import subprocess
 from datetime import datetime
 import os
 import shutil
+import time
 
 # =========================
 # CONFIG
@@ -108,15 +112,52 @@ def clean():
             os.remove(file)
             print(f"🧹 removed {file}")
 
+def create_shortcut(app_name, target_exe, output_dir):
+    try:
+        import pythoncom
+        from win32com.shell import shell
+
+        pythoncom.CoInitialize()  # 🔥 CRITICAL FIX
+
+        target_exe = os.path.realpath(os.path.abspath(target_exe))
+
+        if not os.path.exists(target_exe):
+            raise FileNotFoundError(target_exe)
+
+        shortcut_path = os.path.realpath(os.path.join(output_dir, f"{app_name}.lnk"))
+
+        shell_link = pythoncom.CoCreateInstance(
+            shell.CLSID_ShellLink,
+            None,
+            pythoncom.CLSCTX_INPROC_SERVER,
+            shell.IID_IShellLinkW
+        )
+
+        for _ in range(50):
+            if os.path.exists(target_exe) and os.path.getsize(target_exe) > 0:
+                break
+            time.sleep(0.1)
+        else:
+            raise FileNotFoundError("EXE not ready yet: " + target_exe)
+
+        shell_link.SetPath(target_exe)
+        shell_link.SetWorkingDirectory(os.path.abspath(output_dir))
+        shell_link.SetDescription(app_name)
+
+        persist_file = shell_link.QueryInterface(pythoncom.IID_IPersistFile)
+        persist_file.Save(shortcut_path, 0)
+
+        print(f"🔗 Shortcut created: {shortcut_path}")
+
+    except Exception as e:
+        print(f"⚠ Shortcut creation failed: {e}")
+
 
 # =========================
 # PYINSTALLER BUILD
 # =========================
 
-def build_pyinstaller(version):
-    safe_app = APP_NAME.replace(" ", "")
-    safe_version = version.replace("v", "").replace("+", "_").replace(" ", "_")
-    exe_name = f"{safe_app}_v{safe_version}"
+def build_pyinstaller(exe_name):
 
     cmd = [
         "pyinstaller",
@@ -170,8 +211,16 @@ def main():
 
     write_version_file(version, build_time, COMMIT, COMMIT_URL)
 
-    build_pyinstaller(version)
+    safe_app = APP_NAME.replace(" ", "")
+    safe_version = version.replace("+", "_").replace(" ", "_")
+    exe_name = f"{safe_app}_{safe_version}"
+
+    build_pyinstaller(exe_name)
     
+    exe_file = f"{exe_name}.exe"
+    exe_path = os.path.abspath(os.path.join(OUTPUT_DIR, exe_file))
+
+    create_shortcut(safe_app, exe_path, OUTPUT_DIR)
     clean()
 
     print("\n✅ DONE")
