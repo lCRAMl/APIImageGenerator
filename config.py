@@ -30,9 +30,9 @@ class AppConfig:
 
     # Dummy-Defaults für URLs. Beim ersten Start werden diese in die config.ini
     # geschrieben und sollen vom Nutzer manuell angepasst werden.
-    DEFAULT_GENERATE_URL: str = "https://example.com/api/v1/jobs/createTask"
-    DEFAULT_STATUS_URL:   str = "https://example.com/api/v1/jobs/recordInfo"
-    DEFAULT_CREDITS_URL:  str = "https://example.com/api/v1/common/credit"
+    DEFAULT_GENERATE_URL: str = "https://api.kie.ai/api/v1/jobs/createTask"
+    DEFAULT_STATUS_URL:   str = "https://api.kie.ai/api/v1/jobs/recordInfo"
+    DEFAULT_CREDITS_URL:  str = "https://api.kie.ai/api/v1/chat/credit"
     DEFAULT_CALLBACK_URL: str = "https://example.com/callback"
 
     def __init__(self) -> None:
