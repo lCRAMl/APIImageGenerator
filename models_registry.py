@@ -64,6 +64,77 @@ SEED_MAX = 2_147_483_647
 
 MODELS: list[ModelSpec] = [
 
+    # ----- Google - Nano Banana 2 -----
+    ModelSpec(
+        display_name="Google - Nano Banana 2",
+        api_model="nano-banana-2",
+        images_field="image_input",
+        images_is_list=True,
+        max_images=14,
+        params=[
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["1:1", "1:4", "1:8", "2:3", "3:2",
+                               "3:4", "4:1", "4:3", "4:5", "5:4",
+                               "8:1", "9:16", "16:9", "21:9", "auto"],
+                      default="auto"),
+            ParamSpec("resolution", "Resolution", "enum",
+                      options=["1K", "2K", "4K"], default="4K"),
+            ParamSpec("output_format", "Output Format", "enum",
+                      options=["png", "jpg"], default="png"),
+        ],
+    ),
+    
+    # ----- Google - Nano Banana Pro -----
+    ModelSpec(
+        display_name="Google - Nano Banana Pro",
+        api_model="nano-banana-pro",
+        images_field="image_input",
+        images_is_list=True,
+        max_images=8,
+        params=[
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["1:1", "2:3", "3:2", "3:4", "4:3",
+                               "4:5", "5:4", "9:16", "16:9", "21:9", "auto"],
+                      default="1:1"),
+            ParamSpec("resolution", "Resolution", "enum",
+                      options=["1K", "2K", "4K"], default="1K"),
+            ParamSpec("output_format", "Output Format", "enum",
+                      options=["png", "jpg"], default="png"),
+        ],
+    ),
+    
+    # ----- Google - Nano Banana Edit -----
+    ModelSpec(
+        display_name="Google - Nano Banana Edit",
+        api_model="google/nano-banana-edit",
+        images_field="image_urls",
+        images_is_list=True,
+        max_images=10,
+        params=[
+            ParamSpec("output_format", "Output Format", "enum",
+                      options=["png", "jpeg"], default="png"),
+            ParamSpec("image_size", "Image Size", "enum",
+                      options=["1:1", "9:16", "16:9", "3:4", "4:3",
+                               "3:2", "2:3", "5:4", "4:5", "21:9", "auto"],
+                      default="1:1"),
+        ],
+    ),
+
+    # ----- GPT Image 2 - Image to Image -----
+    ModelSpec(
+        display_name="GPT Image-2 - Image to Image",
+        api_model="gpt-image-2-image-to-image",
+        images_field="input_urls",
+        images_is_list=True,
+        max_images=16,
+        params=[
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["auto", "1:1", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "16:9", "9:16", "2:1", "1:2", "3:1", "1:3", "21:9", "9:21"], default="auto"),
+            ParamSpec("resolution", "Resolution", "enum",
+                      options=["1K", "2K", "4K"], default="4K"),
+        ],
+    ),
+
     # ----- Seedream 4.0 - Edit -----
     ModelSpec(
         display_name="Seedream 4.0 - Edit",
@@ -121,62 +192,6 @@ MODELS: list[ModelSpec] = [
             ParamSpec("quality", "Quality", "enum",
                       options=["basic", "high"], default="basic"),
             ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
-        ],
-    ),
-
-    # ----- Google - Nano Banana 2 -----
-    ModelSpec(
-        display_name="Google - Nano Banana 2",
-        api_model="nano-banana-2",
-        images_field="image_input",
-        images_is_list=True,
-        max_images=14,
-        params=[
-            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
-                      options=["1:1", "1:4", "1:8", "2:3", "3:2",
-                               "3:4", "4:1", "4:3", "4:5", "5:4",
-                               "8:1", "9:16", "16:9", "21:9", "auto"],
-                      default="auto"),
-            ParamSpec("resolution", "Resolution", "enum",
-                      options=["1K", "2K", "4K"], default="4K"),
-            ParamSpec("output_format", "Output Format", "enum",
-                      options=["png", "jpg"], default="png"),
-        ],
-    ),
-
-    # ----- Google - Nano Banana Edit -----
-    ModelSpec(
-        display_name="Google - Nano Banana Edit",
-        api_model="google/nano-banana-edit",
-        images_field="image_urls",
-        images_is_list=True,
-        max_images=10,
-        params=[
-            ParamSpec("output_format", "Output Format", "enum",
-                      options=["png", "jpeg"], default="png"),
-            ParamSpec("image_size", "Image Size", "enum",
-                      options=["1:1", "9:16", "16:9", "3:4", "4:3",
-                               "3:2", "2:3", "5:4", "4:5", "21:9", "auto"],
-                      default="1:1"),
-        ],
-    ),
-
-    # ----- Google - Nano Banana Pro -----
-    ModelSpec(
-        display_name="Google - Nano Banana Pro",
-        api_model="nano-banana-pro",
-        images_field="image_input",
-        images_is_list=True,
-        max_images=8,
-        params=[
-            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
-                      options=["1:1", "2:3", "3:2", "3:4", "4:3",
-                               "4:5", "5:4", "9:16", "16:9", "21:9", "auto"],
-                      default="1:1"),
-            ParamSpec("resolution", "Resolution", "enum",
-                      options=["1K", "2K", "4K"], default="1K"),
-            ParamSpec("output_format", "Output Format", "enum",
-                      options=["png", "jpg"], default="png"),
         ],
     ),
 
@@ -240,21 +255,6 @@ MODELS: list[ModelSpec] = [
                       options=["1:1", "2:3", "3:2"], default="3:2"),
             ParamSpec("quality", "Quality", "enum",
                       options=["medium", "high"], default="medium"),
-        ],
-    ),
-    
-    # ----- GPT Image 2 - Image to Image -----
-    ModelSpec(
-        display_name="GPT Image-2 - Image to Image",
-        api_model="gpt-image-2-image-to-image",
-        images_field="input_urls",
-        images_is_list=True,
-        max_images=16,
-        params=[
-            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
-                      options=["auto", "1:1", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5", "16:9", "9:16", "2:1", "1:2", "3:1", "1:3", "21:9", "9:21"], default="auto"),
-            ParamSpec("resolution", "Resolution", "enum",
-                      options=["1K", "2K", "4K"], default="4K"),
         ],
     ),
 
