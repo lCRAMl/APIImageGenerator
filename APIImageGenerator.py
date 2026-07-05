@@ -30,7 +30,7 @@ from models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_n
 # =========================
 config = AppConfig()
 ARCHIVE_DIR = config.archive_path
-BUILD_INFO = "API Image Generator \nVersion 2.0.3 \n© Jun 2026"
+BUILD_INFO = "API Image Generator \nVersion 2.0.4 \n© Jul 2026"
 
 def is_windows_dark_mode() -> bool:
     try:
