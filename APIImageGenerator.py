@@ -30,7 +30,7 @@ from models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_n
 # =========================
 config = AppConfig()
 ARCHIVE_DIR = config.archive_path
-BUILD_INFO = "API Image Generator \nVersion 2.0.5 \n© Jul 2026"
+from build_version import BUILD_INFO, VERSION, BUILD_TIME, APP_NAME
 
 def is_windows_dark_mode() -> bool:
     try:
@@ -872,3 +872,4 @@ if __name__ == "__main__":
     w = MainWindow()
     w.show()
     sys.exit(app.exec())
+
