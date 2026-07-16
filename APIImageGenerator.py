@@ -23,7 +23,7 @@ from referencethumb import ReferenceThumb
 from config import AppConfig
 from SplashScreenPython.splash_video_webP import SplashScreen
 from models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
-
+from flashtaskbar import flash_taskbar
 
 # =========================
 # CONFIG
@@ -281,6 +281,7 @@ class GenerationWorker(QThread):
         param_values: dict,
         callback_url: str,
         target_folder: Path,
+        win_id: int,
     ) -> None:
         super().__init__()
         self.api = api
@@ -290,6 +291,7 @@ class GenerationWorker(QThread):
         self.param_values = param_values
         self.callback_url = callback_url
         self.target_folder = target_folder
+        self.win_id = win_id
 
     def run(self) -> None:
         try:
@@ -341,11 +343,13 @@ class GenerationWorker(QThread):
 
                 # HTTP-/API-Fehler beim Statusabruf sofort eskalieren.
                 if err:
+                    flash_taskbar(self.win_id)
                     raise Exception(err)
 
                 is_terminal, is_success, msg, raw_state = _terminal_state(status_data)
 
                 if is_terminal and is_success:
+                    flash_taskbar(self.win_id)
                     image_url = _extract_image_url(status_data)
                     if not image_url:
                         raise Exception(
@@ -376,10 +380,12 @@ class GenerationWorker(QThread):
                     return
 
                 if is_terminal and not is_success:
+                    flash_taskbar(self.win_id)
                     raise Exception(msg or "Generierung fehlgeschlagen")
 
                 # nicht-terminal — Zähler für unbekannten State führen
                 if raw_state == "unknown":
+                    flash_taskbar(self.win_id)
                     unknown_count += 1
                     if unknown_count >= 3:
                         # nach 3 erfolglosen Polls: Rohdaten anzeigen, damit sichtbar wird,
@@ -759,6 +765,7 @@ class MainWindow(QWidget):
             param_values  = param_values,
             callback_url  = self.callback_url,
             target_folder = target_folder,
+            win_id        = int(self.winId()),
         )
         self.worker.status.connect(self.handle_status)
         self.worker.finished.connect(self.handle_result)
