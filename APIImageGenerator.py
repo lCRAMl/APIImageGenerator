@@ -23,7 +23,7 @@ from referencethumb import ReferenceThumb
 from config import AppConfig
 from SplashScreenPython.splash_video_webP import SplashScreen
 from models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
-from flashtaskbar import flash_taskbar
+from ui.flashtaskbar import flash_taskbar
 
 # =========================
 # CONFIG
