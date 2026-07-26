@@ -113,7 +113,38 @@ def clean():
             os.remove(file)
             print(f"🧹 removed {file}")
 
-def create_shortcut(app_name, target_exe, output_dir):
+def get_start_menu_programs_dir():
+    """Liefert den "Start Menu\\Programs"-Ordner des aktuellen Benutzers
+    (das ist der Ordner, aus dem Windows u.a. die An-die-Taskleiste-anheften-
+    und Startmenü-Kacheln speist).
+
+    Nutzt SHGetFolderPathW mit CSIDL_PROGRAMS - diese API wird von Windows
+    seit Windows 2000 bis einschließlich Windows 11 aus Kompatibilitäts-
+    gründen unterstützt und liefert den Pfad auch bei umgeleiteten Profilen
+    (z.B. Firmen-Domänen) korrekt.
+    """
+    CSIDL_PROGRAMS = 0x0002
+    SHGFP_TYPE_CURRENT = 0
+
+    try:
+        import ctypes
+        buf = ctypes.create_unicode_buffer(260)
+        result = ctypes.windll.shell32.SHGetFolderPathW(
+            0, CSIDL_PROGRAMS, 0, SHGFP_TYPE_CURRENT, buf
+        )
+        if result == 0 and buf.value:
+            return buf.value
+    except Exception:
+        pass
+
+    # Fallback: Pfad ueber die APPDATA-Umgebungsvariable dynamisch ermitteln
+    appdata = os.environ.get("APPDATA") or os.path.join(
+        "C:\\Users", os.environ.get("USERNAME", ""), "AppData", "Roaming"
+    )
+    return os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs")
+
+
+def create_shortcut(app_name, target_exe, working_dir):
     try:
         import pythoncom
         from win32com.shell import shell
@@ -125,7 +156,9 @@ def create_shortcut(app_name, target_exe, output_dir):
         if not os.path.exists(target_exe):
             raise FileNotFoundError(target_exe)
 
-        shortcut_path = os.path.realpath(os.path.join(output_dir, f"{app_name}.lnk"))
+        shortcut_dir = get_start_menu_programs_dir()
+        os.makedirs(shortcut_dir, exist_ok=True)
+        shortcut_path = os.path.realpath(os.path.join(shortcut_dir, f"{app_name}.lnk"))
 
         shell_link = pythoncom.CoCreateInstance(
             shell.CLSID_ShellLink,
@@ -142,13 +175,13 @@ def create_shortcut(app_name, target_exe, output_dir):
             raise FileNotFoundError("EXE not ready yet: " + target_exe)
 
         shell_link.SetPath(target_exe)
-        shell_link.SetWorkingDirectory(os.path.abspath(output_dir))
+        shell_link.SetWorkingDirectory(os.path.abspath(working_dir))
         shell_link.SetDescription(app_name)
 
         persist_file = shell_link.QueryInterface(pythoncom.IID_IPersistFile)
         persist_file.Save(shortcut_path, 0)
 
-        print(f"🔗 Shortcut created: {shortcut_path}")
+        print(f"🔗 Windows Taskbar Shortcut created: {shortcut_path}")
 
     except Exception as e:
         print(f"⚠ Shortcut creation failed: {e}")
