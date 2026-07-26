@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import shutil
 import time
+from pathlib import Path
 
 # =========================
 # CONFIG
@@ -157,6 +158,22 @@ def create_shortcut(app_name, target_exe, output_dir):
 # PYINSTALLER BUILD
 # =========================
 
+def get_c2pa_dll_path():
+    """Findet die c2pa_c.dll im installierten c2pa-Package.
+
+    Das c2pa-Package laedt diese DLL zur Laufzeit dynamisch per ctypes,
+    weshalb PyInstaller sie bei der statischen Analyse nicht automatisch
+    erkennt und mitbuendelt.
+    """
+    try:
+        import c2pa
+    except ImportError:
+        return None
+
+    dll_path = Path(c2pa.__file__).parent / "libs" / "c2pa_c.dll"
+    return dll_path if dll_path.exists() else None
+
+
 def build_pyinstaller(exe_name):
 
     cmd = [
@@ -182,6 +199,16 @@ def build_pyinstaller(exe_name):
     for source, target in ASSET_PATHS.items():
         if os.path.exists(source):
             cmd.append(f"--add-data={source}{os.pathsep}{target}")
+
+    # =========================
+    # ADD C2PA DLL (dynamisch per ctypes geladen, von PyInstaller nicht
+    # automatisch erkannt)
+    # =========================
+    c2pa_dll = get_c2pa_dll_path()
+    if c2pa_dll:
+        cmd.append(f"--add-binary={c2pa_dll}{os.pathsep}c2pa/libs")
+    else:
+        print("⚠ c2pa_c.dll nicht gefunden - Build wird ohne C2PA-Unterstuetzung erstellt")
 
     cmd.append("APIImageGenerator.py")
 
