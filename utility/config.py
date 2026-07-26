@@ -20,6 +20,7 @@ class AppConfig:
     SECTION_PATHS = "Paths"
     SECTION_API = "API"
     SECTION_URLS = "URLs"
+    SECTION_OPTIONS = "Options"
 
     # ==============================
     # Default-Werte
@@ -27,6 +28,7 @@ class AppConfig:
     DEFAULT_ARCHIVE_PATH: Path = Path.home() / "Pictures" / "Instagram"
     DEFAULT_NANOBANANA_KEY: str = ""
     DEFAULT_IMGBB_KEY: str = ""
+    DEFAULT_REMOVE_C2PA_DATA: bool = True
 
     # Dummy-Defaults für URLs. Beim ersten Start werden diese in die config.ini
     # geschrieben und sollen vom Nutzer manuell angepasst werden.
@@ -48,6 +50,8 @@ class AppConfig:
         self.status_url:   str = self.DEFAULT_STATUS_URL
         self.credits_url:  str = self.DEFAULT_CREDITS_URL
         self.callback_url: str = self.DEFAULT_CALLBACK_URL
+
+        self.remove_c2pa_data: bool = self.DEFAULT_REMOVE_C2PA_DATA
 
         self._load_or_create()
 
@@ -80,6 +84,9 @@ class AppConfig:
             "status_url":   self.status_url,
             "credits_url":  self.credits_url,
             "callback_url": self.callback_url,
+        }
+        self.config[self.SECTION_OPTIONS] = {
+            "remove_c2pa_data": str(self.remove_c2pa_data),
         }
 
         try:
@@ -121,6 +128,7 @@ class AppConfig:
         self._parse_paths()
         self._parse_api()
         self._parse_urls()
+        self._parse_options()
 
     def _parse_paths(self) -> None:
         raw_path = self.config.get(
@@ -155,6 +163,11 @@ class AppConfig:
         )
         self.callback_url = self.config.get(
             self.SECTION_URLS, "callback_url", fallback=self.DEFAULT_CALLBACK_URL
+        )
+
+    def _parse_options(self) -> None:
+        self.remove_c2pa_data = self.config.getboolean(
+            self.SECTION_OPTIONS, "remove_c2pa_data", fallback=self.DEFAULT_REMOVE_C2PA_DATA
         )
 
     @staticmethod

@@ -20,10 +20,11 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal as Signal, QTimer
 
 from utility.loading_overlay import LoadingOverlayGemini
 from ui.referencethumb import ReferenceThumb
-from utility.config import AppConfig
+from utility.config import AppConfig, ConfigError
 from SplashScreenPython.splash_video_webP import SplashScreen
 from utility.models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
 from ui.flashtaskbar import flash_taskbar
+from utility.c2ps import has_c2pa_data, remove_c2pa_data
 
 # =========================
 # CONFIG
@@ -282,6 +283,7 @@ class GenerationWorker(QThread):
         callback_url: str,
         target_folder: Path,
         win_id: int,
+        remove_c2pa: bool = True,
     ) -> None:
         super().__init__()
         self.api = api
@@ -292,6 +294,7 @@ class GenerationWorker(QThread):
         self.callback_url = callback_url
         self.target_folder = target_folder
         self.win_id = win_id
+        self.remove_c2pa = remove_c2pa
 
     def run(self) -> None:
         try:
@@ -375,6 +378,17 @@ class GenerationWorker(QThread):
                             f.write(chunk)
                     with open(txt_path, "w", encoding="utf-8") as f:
                         f.write(self.prompt)
+
+                    if self.remove_c2pa:
+                        self.status.emit("Prüfe auf C2PA-Daten ...")
+                        try:
+                            if has_c2pa_data(local_path):
+                                remove_c2pa_data(local_path)
+                                self.status.emit("C2PA-Daten gefunden und entfernt.")
+                            else:
+                                self.status.emit("Keine C2PA-Daten gefunden.")
+                        except Exception as e:
+                            self.status.emit(f"C2PA-Prüfung fehlgeschlagen: {e}")
 
                     self.finished.emit(str(local_path), self.prompt, task_id)
                     return
@@ -526,6 +540,12 @@ class MainWindow(QWidget):
             thumb_row.addWidget(thumb)
 
         left_layout.addLayout(thumb_row)
+
+        # ---------- C2PA-Schalter ----------
+        self.remove_c2pa_checkbox = QCheckBox("C2PA-Daten nach Download entfernen")
+        self.remove_c2pa_checkbox.setChecked(config.remove_c2pa_data)
+        self.remove_c2pa_checkbox.toggled.connect(self._on_remove_c2pa_toggled)
+        left_layout.addWidget(self.remove_c2pa_checkbox)
 
         # ---------- Generate Button ----------
         self.generate_btn = QPushButton("✨ Generate AI")
@@ -766,6 +786,7 @@ class MainWindow(QWidget):
             callback_url  = self.callback_url,
             target_folder = target_folder,
             win_id        = int(self.winId()),
+            remove_c2pa   = self.remove_c2pa_checkbox.isChecked(),
         )
         self.worker.status.connect(self.handle_status)
         self.worker.finished.connect(self.handle_result)
@@ -829,6 +850,13 @@ class MainWindow(QWidget):
 
     def on_credits_received(self, balance: float) -> None:
         self.credits_label.setText("💰 ?" if balance < 0 else f"💰 {int(balance)}")
+
+    def _on_remove_c2pa_toggled(self, checked: bool) -> None:
+        config.remove_c2pa_data = checked
+        try:
+            config.save()
+        except ConfigError as e:
+            self.status.setText(f"Einstellung konnte nicht gespeichert werden: {e}")
 
     def clear_reference(self, index: int) -> None:
         self.reference_images[index] = None
