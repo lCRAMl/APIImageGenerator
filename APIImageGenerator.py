@@ -18,11 +18,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QPixmap, QPalette, QColor, QFont, QIcon
 from PyQt6.QtCore import Qt, QThread, pyqtSignal as Signal, QTimer
 
-from loading_overlay import LoadingOverlayGemini
-from referencethumb import ReferenceThumb
-from config import AppConfig
+from utility.loading_overlay import LoadingOverlayGemini
+from ui.referencethumb import ReferenceThumb
+from utility.config import AppConfig
 from SplashScreenPython.splash_video_webP import SplashScreen
-from models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
+from utility.models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
 from ui.flashtaskbar import flash_taskbar
 
 # =========================

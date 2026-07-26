@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPainter, QPixmap, QColor
 import math
 
-from utils import resource_path
+from utility.resource_path import resource_path
 
 
 class LoadingOverlayGemini(QWidget):

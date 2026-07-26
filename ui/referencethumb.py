@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QWidget, QLabel, QPushButton, QFileDialog
 from PyQt6.QtCore import pyqtSignal as Signal, Qt
 from PyQt6.QtGui import QPixmap, QPainter, QPen
 
-from imgbb import ImgBBClient, ImgBBUploadWorker
+from utility.imgbb import ImgBBClient, ImgBBUploadWorker
 
 logger = logging.getLogger(__name__)
 

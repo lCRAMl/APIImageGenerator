@@ -15,7 +15,7 @@ class ConfigError(Exception):
 
 
 class AppConfig:
-    CONFIG_NAME = "config.ini"
+    CONFIG_NAME = "..//config.ini"
 
     SECTION_PATHS = "Paths"
     SECTION_API = "API"
