@@ -73,6 +73,7 @@ class ReferenceThumb(QWidget):
 
     cleared = Signal(int)
     uploaded = Signal(int, str)
+    upload_failed = Signal(int, str)
 
     # --- Layout-Konstanten ---
     THUMB_SIZE = 100
@@ -212,3 +213,4 @@ class ReferenceThumb(QWidget):
         self.set_progress(1.0, self._COLOR_ERROR)
         logger.error("Upload Thumb %d fehlgeschlagen: %s", self.index, error)
         self.image.setText("Upload\nfailed")
+        self.upload_failed.emit(self.index, error)

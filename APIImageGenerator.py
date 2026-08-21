@@ -536,6 +536,7 @@ class MainWindow(QWidget):
             thumb = ReferenceThumb(index, self.imgbb_api_key)
             thumb.cleared.connect(self.clear_reference)
             thumb.uploaded.connect(self.reference_uploaded)
+            thumb.upload_failed.connect(self.reference_upload_failed)
             self.thumb_labels.append(thumb)
             thumb_row.addWidget(thumb)
 
@@ -863,6 +864,9 @@ class MainWindow(QWidget):
 
     def reference_uploaded(self, index: int, url: str) -> None:
         self.reference_images[index] = url
+
+    def reference_upload_failed(self, index: int, error: str) -> None:
+        self.status.setText(f"Upload Referenzbild {index + 1} fehlgeschlagen: {error}")
 
     def load_reference(self, index: int) -> None:
         file, _ = QFileDialog.getOpenFileName(
