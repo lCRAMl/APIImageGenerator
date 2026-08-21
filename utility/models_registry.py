@@ -64,6 +64,18 @@ SEED_MAX = 2_147_483_647
 
 MODELS: list[ModelSpec] = [
 
+    # ----- Grok Imagine - Image to Image -----
+    ModelSpec(
+        display_name="Grok Imagine - Image to Image",
+        api_model="grok-imagine/image-to-image",
+        images_field="image_urls",
+        images_is_list=True,
+        max_images=5,
+        params=[
+            ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
+        ],
+    ),
+
     # ----- Google - Nano Banana 2 -----
     ModelSpec(
         display_name="Google - Nano Banana 2",
@@ -134,27 +146,55 @@ MODELS: list[ModelSpec] = [
                       options=["1K", "2K", "4K"], default="4K"),
         ],
     ),
-
-    # ----- Seedream 4.0 - Edit -----
+    
+    # ----- GPT Image 1.5 - Image to Image -----
     ModelSpec(
-        display_name="Seedream 4.0 - Edit",
-        api_model="bytedance/seedream-v4-edit",
+        display_name="GPT Image-1.5 - Image to Image",
+        api_model="gpt-image/1.5-image-to-image",
+        images_field="input_urls",
+        images_is_list=True,
+        max_images=16,
+        params=[
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["1:1", "2:3", "3:2"], default="3:2"),
+            ParamSpec("quality", "Quality", "enum",
+                      options=["medium", "high"], default="medium"),
+        ],
+    ),
+
+    # ----- Seedream 5.0 PRO - Image to Image -----
+    ModelSpec(
+        display_name="Seedream 5.0 Pro - Image to Image",
+        api_model="seedream/5-pro-image-to-image",
         images_field="image_urls",
         images_is_list=True,
-        max_images=10,
+        max_images=14,
         params=[
-            ParamSpec("image_size", "Image Size", "enum",
-                      options=["square", "square_hd",
-                               "portrait_4_3", "portrait_3_2", "portrait_16_9",
-                               "landscape_4_3", "landscape_3_2",
-                               "landscape_16_9", "landscape_21_9"],
-                      default="square_hd"),
-            ParamSpec("image_resolution", "Resolution", "enum",
-                      options=["1K", "2K", "4K"], default="1K"),
-            ParamSpec("max_images", "Max Images", "int",
-                      default=1, min_value=1, max_value=6, step=1),
-            ParamSpec("seed", "Seed", "int",
-                      default=0, min_value=0, max_value=SEED_MAX, step=1),
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["1:1", "4:3", "3:4", "16:9", "9:16",
+                               "2:3", "3:2", "21:9"],
+                      default="1:1"),
+            ParamSpec("quality", "Quality", "enum",
+                      options=["basic", "high"], default="basic"),
+            ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
+        ],
+    ),
+
+
+    # ----- Seedream 5.0 Lite - Image to Image -----
+    ModelSpec(
+        display_name="Seedream 5.0 Lite - Image to Image",
+        api_model="seedream/5-lite-image-to-image",
+        images_field="image_urls",
+        images_is_list=True,
+        max_images=14,
+        params=[
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["1:1", "4:3", "3:4", "16:9", "9:16",
+                               "2:3", "3:2", "21:9"],
+                      default="1:1"),
+            ParamSpec("quality", "Quality", "enum",
+                      options=["basic", "high"], default="basic"),
             ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
         ],
     ),
@@ -177,20 +217,26 @@ MODELS: list[ModelSpec] = [
         ],
     ),
 
-    # ----- Seedream 5.0 Lite - Image to Image -----
+    # ----- Seedream 4.0 - Edit -----
     ModelSpec(
-        display_name="Seedream 5.0 Lite - Image to Image",
-        api_model="seedream/5-lite-image-to-image",
+        display_name="Seedream 4.0 - Edit",
+        api_model="bytedance/seedream-v4-edit",
         images_field="image_urls",
         images_is_list=True,
-        max_images=14,
+        max_images=10,
         params=[
-            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
-                      options=["1:1", "4:3", "3:4", "16:9", "9:16",
-                               "2:3", "3:2", "21:9"],
-                      default="1:1"),
-            ParamSpec("quality", "Quality", "enum",
-                      options=["basic", "high"], default="basic"),
+            ParamSpec("image_size", "Image Size", "enum",
+                      options=["square", "square_hd",
+                               "portrait_4_3", "portrait_3_2", "portrait_16_9",
+                               "landscape_4_3", "landscape_3_2",
+                               "landscape_16_9", "landscape_21_9"],
+                      default="square_hd"),
+            ParamSpec("image_resolution", "Resolution", "enum",
+                      options=["1K", "2K", "4K"], default="1K"),
+            ParamSpec("max_images", "Max Images", "int",
+                      default=1, min_value=1, max_value=6, step=1),
+            ParamSpec("seed", "Seed", "int",
+                      default=0, min_value=0, max_value=SEED_MAX, step=1),
             ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
         ],
     ),
@@ -228,33 +274,6 @@ MODELS: list[ModelSpec] = [
             ParamSpec("resolution", "Resolution", "enum",
                       options=["1K", "2K"], default="1K"),
             ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
-        ],
-    ),
-
-    # ----- Grok Imagine - Image to Image -----
-    ModelSpec(
-        display_name="Grok Imagine - Image to Image",
-        api_model="grok-imagine/image-to-image",
-        images_field="image_urls",
-        images_is_list=True,
-        max_images=5,
-        params=[
-            ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
-        ],
-    ),
-
-    # ----- GPT Image 1.5 - Image to Image -----
-    ModelSpec(
-        display_name="GPT Image-1.5 - Image to Image",
-        api_model="gpt-image/1.5-image-to-image",
-        images_field="input_urls",
-        images_is_list=True,
-        max_images=16,
-        params=[
-            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
-                      options=["1:1", "2:3", "3:2"], default="3:2"),
-            ParamSpec("quality", "Quality", "enum",
-                      options=["medium", "high"], default="medium"),
         ],
     ),
 
