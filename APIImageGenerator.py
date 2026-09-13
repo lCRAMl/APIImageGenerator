@@ -400,13 +400,11 @@ class GenerationWorker(QThread):
 
                 # HTTP-/API-Fehler beim Statusabruf sofort eskalieren.
                 if err:
-                    flash_taskbar(self.win_id)
                     raise Exception(err)
 
                 is_terminal, is_success, msg, raw_state = _terminal_state(status_data)
 
                 if is_terminal and is_success:
-                    flash_taskbar(self.win_id)
                     image_url = _extract_image_url(status_data)
                     if not image_url:
                         raise Exception(
@@ -452,16 +450,16 @@ class GenerationWorker(QThread):
                         except Exception as e:
                             self.status.emit(f"C2PA-Prüfung fehlgeschlagen: {e}")
 
+                    # erst blinken, wenn das Bild vollständig lokal vorliegt
+                    flash_taskbar(self.win_id)
                     self.finished.emit(str(local_path), self.prompt, task_id)
                     return
 
                 if is_terminal and not is_success:
-                    flash_taskbar(self.win_id)
                     raise Exception(msg or "Generierung fehlgeschlagen")
 
                 # nicht-terminal — Zähler für unbekannten State führen
                 if raw_state == "unknown":
-                    flash_taskbar(self.win_id)
                     unknown_count += 1
                     if unknown_count >= 3:
                         # nach 3 erfolglosen Polls: Rohdaten anzeigen, damit sichtbar wird,
@@ -481,6 +479,7 @@ class GenerationWorker(QThread):
             raise Exception("Timeout – Bild konnte nicht generiert werden")
 
         except Exception as e:
+            flash_taskbar(self.win_id)
             self.status.emit(f"Fehler: {e}")
 
 
