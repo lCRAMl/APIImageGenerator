@@ -21,6 +21,7 @@ class AppConfig:
     SECTION_API = "API"
     SECTION_URLS = "URLs"
     SECTION_OPTIONS = "Options"
+    SECTION_DOWNLOAD = "Download"
 
     # ==============================
     # Default-Werte
@@ -29,6 +30,8 @@ class AppConfig:
     DEFAULT_NANOBANANA_KEY: str = ""
     DEFAULT_IMGBB_KEY: str = ""
     DEFAULT_REMOVE_C2PA_DATA: bool = True
+    DEFAULT_DOWNLOAD_ATTEMPTS: int = 3
+    DEFAULT_DOWNLOAD_TIMEOUT_S: int = 60
 
     # Dummy-Defaults für URLs. Beim ersten Start werden diese in die config.ini
     # geschrieben und sollen vom Nutzer manuell angepasst werden.
@@ -52,6 +55,9 @@ class AppConfig:
         self.callback_url: str = self.DEFAULT_CALLBACK_URL
 
         self.remove_c2pa_data: bool = self.DEFAULT_REMOVE_C2PA_DATA
+
+        self.download_attempts: int = self.DEFAULT_DOWNLOAD_ATTEMPTS
+        self.download_timeout_s: int = self.DEFAULT_DOWNLOAD_TIMEOUT_S
 
         self._load_or_create()
 
@@ -87,6 +93,10 @@ class AppConfig:
         }
         self.config[self.SECTION_OPTIONS] = {
             "remove_c2pa_data": str(self.remove_c2pa_data),
+        }
+        self.config[self.SECTION_DOWNLOAD] = {
+            "download_attempts":  str(self.download_attempts),
+            "download_timeout_s": str(self.download_timeout_s),
         }
 
         try:
@@ -129,6 +139,19 @@ class AppConfig:
         self._parse_api()
         self._parse_urls()
         self._parse_options()
+        self._parse_download()
+
+        # Fehlende Download-Einträge (z.B. Config aus älterer Version) mit den
+        # Defaults in die Datei schreiben, damit sie dort anpassbar sind.
+        if not all(
+            self.config.has_option(self.SECTION_DOWNLOAD, key)
+            for key in ("download_attempts", "download_timeout_s")
+        ):
+            logger.info("Download-Einstellungen fehlen in der Config – Defaults werden eingetragen.")
+            try:
+                self.save()
+            except ConfigError as exc:
+                logger.warning("%s", exc)
 
     def _parse_paths(self) -> None:
         raw_path = self.config.get(
@@ -169,6 +192,28 @@ class AppConfig:
         self.remove_c2pa_data = self.config.getboolean(
             self.SECTION_OPTIONS, "remove_c2pa_data", fallback=self.DEFAULT_REMOVE_C2PA_DATA
         )
+
+    def _parse_download(self) -> None:
+        self.download_attempts = self._get_positive_int(
+            self.SECTION_DOWNLOAD, "download_attempts", self.DEFAULT_DOWNLOAD_ATTEMPTS
+        )
+        self.download_timeout_s = self._get_positive_int(
+            self.SECTION_DOWNLOAD, "download_timeout_s", self.DEFAULT_DOWNLOAD_TIMEOUT_S
+        )
+
+    def _get_positive_int(self, section: str, key: str, default: int) -> int:
+        """Liest eine Ganzzahl >= 1; bei ungültigem Wert wird der Default verwendet."""
+        try:
+            value = self.config.getint(section, key, fallback=default)
+        except ValueError:
+            value = 0
+        if value < 1:
+            logger.warning(
+                "%s '%s' ist ungültig – Default %d wird verwendet.",
+                key, self.config.get(section, key, fallback=""), default,
+            )
+            return default
+        return value
 
     @staticmethod
     def _get_config_path() -> Path:

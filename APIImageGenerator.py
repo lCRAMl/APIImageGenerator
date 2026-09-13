@@ -267,10 +267,6 @@ def _terminal_state(status_data: dict) -> tuple[bool, bool, str, str]:
     return False, False, "", "unknown"
 
 
-DOWNLOAD_ATTEMPTS  = 3
-DOWNLOAD_TIMEOUT_S = 30
-
-
 def _download_file(url: str, target: Path, timeout: float) -> None:
     """
     Lädt `url` nach `target` herunter.
@@ -338,6 +334,8 @@ class GenerationWorker(QThread):
         target_folder: Path,
         win_id: int,
         remove_c2pa: bool = True,
+        download_attempts: int = AppConfig.DEFAULT_DOWNLOAD_ATTEMPTS,
+        download_timeout_s: float = AppConfig.DEFAULT_DOWNLOAD_TIMEOUT_S,
     ) -> None:
         super().__init__()
         self.api = api
@@ -349,6 +347,8 @@ class GenerationWorker(QThread):
         self.target_folder = target_folder
         self.win_id = win_id
         self.remove_c2pa = remove_c2pa
+        self.download_attempts = download_attempts
+        self.download_timeout_s = download_timeout_s
 
     def run(self) -> None:
         try:
@@ -422,18 +422,18 @@ class GenerationWorker(QThread):
                     txt_path   = self.target_folder / f"{ts}.txt"
 
                     last_error: Exception | None = None
-                    for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
+                    for attempt in range(1, self.download_attempts + 1):
                         self.status.emit(
-                            f"Lade Bild herunter (Versuch {attempt}/{DOWNLOAD_ATTEMPTS}) ..."
+                            f"Lade Bild herunter (Versuch {attempt}/{self.download_attempts}) ..."
                         )
                         try:
-                            _download_file(image_url, local_path, DOWNLOAD_TIMEOUT_S)
+                            _download_file(image_url, local_path, self.download_timeout_s)
                             break
                         except Exception as e:
                             last_error = e
                     else:
                         raise Exception(
-                            f"Download nach {DOWNLOAD_ATTEMPTS} Versuchen fehlgeschlagen: {last_error}"
+                            f"Download nach {self.download_attempts} Versuchen fehlgeschlagen: {last_error}"
                         )
 
                     with open(txt_path, "w", encoding="utf-8") as f:
@@ -849,6 +849,8 @@ class MainWindow(QWidget):
             target_folder = target_folder,
             win_id        = int(self.winId()),
             remove_c2pa   = self.remove_c2pa_checkbox.isChecked(),
+            download_attempts  = config.download_attempts,
+            download_timeout_s = config.download_timeout_s,
         )
         self.worker.status.connect(self.handle_status)
         self.worker.finished.connect(self.handle_result)
