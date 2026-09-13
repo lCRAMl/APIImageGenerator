@@ -5,6 +5,8 @@ import time
 import os
 import json
 import base64
+import threading
+import uuid
 import requests
 import winreg
 from pathlib import Path
@@ -265,6 +267,58 @@ def _terminal_state(status_data: dict) -> tuple[bool, bool, str, str]:
     return False, False, "", "unknown"
 
 
+DOWNLOAD_ATTEMPTS  = 3
+DOWNLOAD_TIMEOUT_S = 30
+
+
+def _download_file(url: str, target: Path, timeout: float) -> None:
+    """
+    Lädt `url` nach `target` herunter.
+
+    `timeout` begrenzt die Gesamtdauer des Downloads (inkl. DNS, Verbindungsaufbau
+    und langsam tröpfelnder Übertragung) — requests' eigener timeout gilt nur pro
+    Socket-Operation. Der Download läuft deshalb in einem eigenen Thread in eine
+    .part-Datei; wird er nicht rechtzeitig fertig, wird er abgebrochen und die
+    Teil-Datei verworfen.
+    """
+    part_path = target.with_name(f"{target.name}.{uuid.uuid4().hex[:8]}.part")
+    cancel = threading.Event()
+    lock = threading.Lock()
+    result: dict[str, Any] = {"done": False, "error": None}
+
+    def download() -> None:
+        try:
+            with requests.get(url, timeout=timeout, stream=True) as r:
+                r.raise_for_status()
+                with open(part_path, "wb") as f:
+                    for chunk in r.iter_content(8192):
+                        if cancel.is_set():
+                            break
+                        f.write(chunk)
+        except Exception as exc:
+            result["error"] = exc
+        with lock:
+            if cancel.is_set() or result["error"]:
+                part_path.unlink(missing_ok=True)
+            else:
+                result["done"] = True
+
+    thread = threading.Thread(target=download, daemon=True)
+    thread.start()
+    thread.join(timeout)
+
+    with lock:
+        if not result["done"]:
+            cancel.set()
+
+    if not result["done"]:
+        if result["error"]:
+            raise result["error"]
+        raise TimeoutError(f"Zeitüberschreitung nach {timeout:g} s")
+
+    os.replace(part_path, target)
+
+
 # ==========================
 # WORKER THREAD
 # ==========================
@@ -360,8 +414,6 @@ class GenerationWorker(QThread):
                             f"Antwort: {json.dumps(status_data)[:400]}"
                         )
 
-                    self.status.emit("Lade Bild herunter ...")
-
                     # Dateiendung bestimmen
                     ext = self.param_values.get("output_format") or "png"
                     if ext == "jpeg":
@@ -371,11 +423,21 @@ class GenerationWorker(QThread):
                     local_path = self.target_folder / f"{ts}.{ext}"
                     txt_path   = self.target_folder / f"{ts}.txt"
 
-                    r = requests.get(image_url, timeout=30, stream=True)
-                    r.raise_for_status()
-                    with open(local_path, "wb") as f:
-                        for chunk in r.iter_content(8192):
-                            f.write(chunk)
+                    last_error: Exception | None = None
+                    for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
+                        self.status.emit(
+                            f"Lade Bild herunter (Versuch {attempt}/{DOWNLOAD_ATTEMPTS}) ..."
+                        )
+                        try:
+                            _download_file(image_url, local_path, DOWNLOAD_TIMEOUT_S)
+                            break
+                        except Exception as e:
+                            last_error = e
+                    else:
+                        raise Exception(
+                            f"Download nach {DOWNLOAD_ATTEMPTS} Versuchen fehlgeschlagen: {last_error}"
+                        )
+
                     with open(txt_path, "w", encoding="utf-8") as f:
                         f.write(self.prompt)
 
