@@ -601,18 +601,12 @@ class MainWindow(QWidget):
 
         left_layout.addLayout(thumb_row)
 
-        # ---------- C2PA-Schalter ----------
+        # ---------- Schalter ----------
         self.remove_c2pa_checkbox = QCheckBox("C2PA-Daten nach Download entfernen")
         self.remove_c2pa_checkbox.setChecked(config.remove_c2pa_data)
         self.remove_c2pa_checkbox.toggled.connect(self._on_remove_c2pa_toggled)
-        left_layout.addWidget(self.remove_c2pa_checkbox)
 
-        # ---------- Generate Button + Auto-Retry-Schalter ----------
-        self.generate_btn = QPushButton("✨ Generate AI")
-        self.generate_btn.setFixedHeight(32)
-        self.generate_btn.setFont(QFont("", 11, QFont.Weight.Bold))
-
-        self.auto_retry_checkbox = QCheckBox("Bei Fehler automatisch neu generieren")
+        self.auto_retry_checkbox = QCheckBox("Autoretry")
         self.auto_retry_checkbox.setChecked(config.auto_retry)
         self.auto_retry_checkbox.setToolTip(
             "Wiederholt die Generierung nach einem Fehler oder Abbruch immer wieder, "
@@ -620,11 +614,18 @@ class MainWindow(QWidget):
         )
         self.auto_retry_checkbox.toggled.connect(self._on_auto_retry_toggled)
 
-        generate_row = QHBoxLayout()
-        generate_row.setSpacing(10)
-        generate_row.addWidget(self.generate_btn, 1)
-        generate_row.addWidget(self.auto_retry_checkbox)
-        left_layout.addLayout(generate_row)
+        options_row = QHBoxLayout()
+        options_row.setSpacing(20)
+        options_row.addWidget(self.remove_c2pa_checkbox)
+        options_row.addWidget(self.auto_retry_checkbox)
+        options_row.addStretch(1)
+        left_layout.addLayout(options_row)
+
+        # ---------- Generate Button ----------
+        self.generate_btn = QPushButton("✨ Generate AI")
+        self.generate_btn.setFixedHeight(50)
+        self.generate_btn.setFont(QFont("", 14, QFont.Weight.Bold))
+        left_layout.addWidget(self.generate_btn)
 
         # ---------- Image Preview ----------
         self.image_label = QLabel("🗋")
