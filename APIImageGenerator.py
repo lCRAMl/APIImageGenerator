@@ -322,6 +322,7 @@ def _download_file(url: str, target: Path, timeout: float) -> None:
 class GenerationWorker(QThread):
     status   = Signal(str)
     finished = Signal(str, str, str)  # local_image_path, prompt, task_id
+    failed   = Signal(str)            # Fehlermeldung
 
     def __init__(
         self,
@@ -332,7 +333,6 @@ class GenerationWorker(QThread):
         param_values: dict,
         callback_url: str,
         target_folder: Path,
-        win_id: int,
         remove_c2pa: bool = True,
         download_attempts: int = AppConfig.DEFAULT_DOWNLOAD_ATTEMPTS,
         download_timeout_s: float = AppConfig.DEFAULT_DOWNLOAD_TIMEOUT_S,
@@ -345,7 +345,6 @@ class GenerationWorker(QThread):
         self.param_values = param_values
         self.callback_url = callback_url
         self.target_folder = target_folder
-        self.win_id = win_id
         self.remove_c2pa = remove_c2pa
         self.download_attempts = download_attempts
         self.download_timeout_s = download_timeout_s
@@ -450,8 +449,8 @@ class GenerationWorker(QThread):
                         except Exception as e:
                             self.status.emit(f"C2PA-Prüfung fehlgeschlagen: {e}")
 
-                    # erst blinken, wenn das Bild vollständig lokal vorliegt
-                    flash_taskbar(self.win_id)
+                    # Blinken übernimmt das Hauptfenster, sobald feststeht,
+                    # dass kein weiterer Versuch mehr folgt.
                     self.finished.emit(str(local_path), self.prompt, task_id)
                     return
 
@@ -479,8 +478,7 @@ class GenerationWorker(QThread):
             raise Exception("Timeout – Bild konnte nicht generiert werden")
 
         except Exception as e:
-            flash_taskbar(self.win_id)
-            self.status.emit(f"Fehler: {e}")
+            self.failed.emit(str(e))
 
 
 # ==========================
@@ -609,11 +607,24 @@ class MainWindow(QWidget):
         self.remove_c2pa_checkbox.toggled.connect(self._on_remove_c2pa_toggled)
         left_layout.addWidget(self.remove_c2pa_checkbox)
 
-        # ---------- Generate Button ----------
+        # ---------- Generate Button + Auto-Retry-Schalter ----------
         self.generate_btn = QPushButton("✨ Generate AI")
-        self.generate_btn.setFixedHeight(50)
-        self.generate_btn.setFont(QFont("", 14, QFont.Weight.Bold))
-        left_layout.addWidget(self.generate_btn)
+        self.generate_btn.setFixedHeight(32)
+        self.generate_btn.setFont(QFont("", 11, QFont.Weight.Bold))
+
+        self.auto_retry_checkbox = QCheckBox("Bei Fehler automatisch neu generieren")
+        self.auto_retry_checkbox.setChecked(config.auto_retry)
+        self.auto_retry_checkbox.setToolTip(
+            "Wiederholt die Generierung nach einem Fehler oder Abbruch immer wieder, "
+            "bis ein Bild heruntergeladen wurde. Zum Stoppen den Haken entfernen."
+        )
+        self.auto_retry_checkbox.toggled.connect(self._on_auto_retry_toggled)
+
+        generate_row = QHBoxLayout()
+        generate_row.setSpacing(10)
+        generate_row.addWidget(self.generate_btn, 1)
+        generate_row.addWidget(self.auto_retry_checkbox)
+        left_layout.addLayout(generate_row)
 
         # ---------- Image Preview ----------
         self.image_label = QLabel("🗋")
@@ -649,6 +660,12 @@ class MainWindow(QWidget):
         # SIGNALS
         # =====================================================
         self.generate_btn.clicked.connect(self.start_generation)
+
+        # Wartezeit zwischen zwei automatischen Versuchen
+        self._generation_attempt = 1
+        self._retry_timer = QTimer(self)
+        self._retry_timer.setSingleShot(True)
+        self._retry_timer.timeout.connect(self._run_generation)
 
         self.loading_overlay = LoadingOverlayGemini(self.image_label, "assets/gemini_symbol.png")
 
@@ -810,21 +827,26 @@ class MainWindow(QWidget):
     # ------------------------------------------------------------------
 
     def start_generation(self) -> None:
+        """Startet eine neue Generierung (Klick auf den Button)."""
+        self._retry_timer.stop()
+        self._generation_attempt = 1
+        self._run_generation()
+
+    def _run_generation(self) -> None:
+        """Führt einen einzelnen Generierungsversuch aus."""
         self._set_generate_btn_loading()
 
         if not self.api.api_key:
-            self.status.setText("API-Key nicht gesetzt!")
-            self._reset_generate_btn()
+            self._abort_generation("API-Key nicht gesetzt!")
             return
         if not self.imgbb_api_key:
-            self.status.setText("IMGBB API-Key nicht gesetzt!")
-            self._reset_generate_btn()
+            self._abort_generation("IMGBB API-Key nicht gesetzt!")
             return
 
         selected_folder = self.folder_dropdown.currentText()
         if not self.folder_dropdown.isEnabled() or selected_folder == "WÄHLE EINEN ORDNER":
             self.blink_folder_dropdown()
-            self._reset_generate_btn()
+            self._abort_generation()
             return
 
         target_folder = ARCHIVE_DIR / selected_folder / "ai"
@@ -833,8 +855,7 @@ class MainWindow(QWidget):
 
         spec = get_model_by_display_name(self.model_dropdown.currentText())
         if not spec:
-            self.status.setText("Unbekanntes Modell ausgewählt")
-            self._reset_generate_btn()
+            self._abort_generation("Unbekanntes Modell ausgewählt")
             return
 
         param_values = self._read_param_values()
@@ -847,13 +868,13 @@ class MainWindow(QWidget):
             param_values  = param_values,
             callback_url  = self.callback_url,
             target_folder = target_folder,
-            win_id        = int(self.winId()),
             remove_c2pa   = self.remove_c2pa_checkbox.isChecked(),
             download_attempts  = config.download_attempts,
             download_timeout_s = config.download_timeout_s,
         )
         self.worker.status.connect(self.handle_status)
         self.worker.finished.connect(self.handle_result)
+        self.worker.failed.connect(self.handle_failure)
 
         self.image_label.setText("")
         self.loading_overlay.start()
@@ -862,6 +883,7 @@ class MainWindow(QWidget):
     def handle_result(self, local_image_path: str, prompt: str, task_id: str) -> None:
         self.loading_overlay.stop()
         self._reset_generate_btn()
+        flash_taskbar(int(self.winId()))
         self.last_image_path = local_image_path
 
         pix = QPixmap(local_image_path).scaled(
@@ -873,11 +895,49 @@ class MainWindow(QWidget):
         self.status.setText("Fertig")
         self.refresh_credits_async()
 
+    def _abort_generation(self, message: str = "") -> None:
+        """Bricht die Generierung inkl. laufender Auto-Wiederholung ab."""
+        self._retry_timer.stop()
+        self.loading_overlay.stop()
+        self._reset_generate_btn()
+        if message:
+            self.status.setText(message)
+
     def handle_status(self, text: str) -> None:
+        if self._generation_attempt > 1:
+            text = f"[Versuch {self._generation_attempt}] {text}"
         self.status.setText(text)
-        if text.startswith("Fehler"):
+
+    def handle_failure(self, message: str) -> None:
+        """Wiederholt die Generierung, solange der Auto-Retry-Schalter an ist."""
+        if self.auto_retry_checkbox.isChecked():
+            delay_s = max(1, config.retry_delay_s)
+            self._generation_attempt += 1
+            self.status.setText(
+                f"Fehler: {message} – Versuch {self._generation_attempt} in {delay_s} s ..."
+            )
+            self._retry_timer.start(delay_s * 1000)
+            return
+
+        self.loading_overlay.stop()
+        self._reset_generate_btn()
+        self.status.setText(f"Fehler: {message}")
+        flash_taskbar(int(self.winId()))
+
+    def _on_auto_retry_toggled(self, checked: bool) -> None:
+        # Läuft gerade eine Wartezeit, wird die Wiederholung sofort abgebrochen.
+        if not checked and self._retry_timer.isActive():
+            self._retry_timer.stop()
             self.loading_overlay.stop()
             self._reset_generate_btn()
+            self.status.setText("Automatische Wiederholung gestoppt.")
+            flash_taskbar(int(self.winId()))
+
+        config.auto_retry = checked
+        try:
+            config.save()
+        except ConfigError as e:
+            self.status.setText(f"Einstellung konnte nicht gespeichert werden: {e}")
 
     # ------------------------------------------------------------------
     # UI Helpers

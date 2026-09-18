@@ -30,6 +30,8 @@ class AppConfig:
     DEFAULT_NANOBANANA_KEY: str = ""
     DEFAULT_IMGBB_KEY: str = ""
     DEFAULT_REMOVE_C2PA_DATA: bool = True
+    DEFAULT_AUTO_RETRY: bool = False
+    DEFAULT_RETRY_DELAY_S: int = 5
     DEFAULT_DOWNLOAD_ATTEMPTS: int = 3
     DEFAULT_DOWNLOAD_TIMEOUT_S: int = 60
 
@@ -55,6 +57,8 @@ class AppConfig:
         self.callback_url: str = self.DEFAULT_CALLBACK_URL
 
         self.remove_c2pa_data: bool = self.DEFAULT_REMOVE_C2PA_DATA
+        self.auto_retry: bool = self.DEFAULT_AUTO_RETRY
+        self.retry_delay_s: int = self.DEFAULT_RETRY_DELAY_S
 
         self.download_attempts: int = self.DEFAULT_DOWNLOAD_ATTEMPTS
         self.download_timeout_s: int = self.DEFAULT_DOWNLOAD_TIMEOUT_S
@@ -93,6 +97,8 @@ class AppConfig:
         }
         self.config[self.SECTION_OPTIONS] = {
             "remove_c2pa_data": str(self.remove_c2pa_data),
+            "auto_retry":       str(self.auto_retry),
+            "retry_delay_s":    str(self.retry_delay_s),
         }
         self.config[self.SECTION_DOWNLOAD] = {
             "download_attempts":  str(self.download_attempts),
@@ -141,13 +147,17 @@ class AppConfig:
         self._parse_options()
         self._parse_download()
 
-        # Fehlende Download-Einträge (z.B. Config aus älterer Version) mit den
-        # Defaults in die Datei schreiben, damit sie dort anpassbar sind.
-        if not all(
-            self.config.has_option(self.SECTION_DOWNLOAD, key)
-            for key in ("download_attempts", "download_timeout_s")
-        ):
-            logger.info("Download-Einstellungen fehlen in der Config – Defaults werden eingetragen.")
+        # Fehlende Einträge (z.B. Config aus älterer Version) mit den Defaults
+        # in die Datei schreiben, damit sie dort anpassbar sind.
+        expected = (
+            (self.SECTION_OPTIONS,  "remove_c2pa_data"),
+            (self.SECTION_OPTIONS,  "auto_retry"),
+            (self.SECTION_OPTIONS,  "retry_delay_s"),
+            (self.SECTION_DOWNLOAD, "download_attempts"),
+            (self.SECTION_DOWNLOAD, "download_timeout_s"),
+        )
+        if not all(self.config.has_option(section, key) for section, key in expected):
+            logger.info("Einträge fehlen in der Config – Defaults werden eingetragen.")
             try:
                 self.save()
             except ConfigError as exc:
@@ -191,6 +201,20 @@ class AppConfig:
     def _parse_options(self) -> None:
         self.remove_c2pa_data = self.config.getboolean(
             self.SECTION_OPTIONS, "remove_c2pa_data", fallback=self.DEFAULT_REMOVE_C2PA_DATA
+        )
+        try:
+            self.auto_retry = self.config.getboolean(
+                self.SECTION_OPTIONS, "auto_retry", fallback=self.DEFAULT_AUTO_RETRY
+            )
+        except ValueError:
+            logger.warning(
+                "auto_retry '%s' ist ungültig – Default %s wird verwendet.",
+                self.config.get(self.SECTION_OPTIONS, "auto_retry", fallback=""),
+                self.DEFAULT_AUTO_RETRY,
+            )
+            self.auto_retry = self.DEFAULT_AUTO_RETRY
+        self.retry_delay_s = self._get_positive_int(
+            self.SECTION_OPTIONS, "retry_delay_s", self.DEFAULT_RETRY_DELAY_S
         )
 
     def _parse_download(self) -> None:
