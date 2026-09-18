@@ -26,6 +26,7 @@ from utility.config import AppConfig, ConfigError
 from SplashScreenPython.splash_video_webP import SplashScreen
 from utility.models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
 from ui.flashtaskbar import flash_taskbar
+from ui.statusbar import StatusBar
 from utility.c2ps import has_c2pa_data, remove_c2pa_data
 
 # =========================
@@ -605,7 +606,6 @@ class MainWindow(QWidget):
         self.remove_c2pa_checkbox = QCheckBox("C2PA-Daten nach Download entfernen")
         self.remove_c2pa_checkbox.setChecked(config.remove_c2pa_data)
         self.remove_c2pa_checkbox.toggled.connect(self._on_remove_c2pa_toggled)
-
         self.auto_retry_checkbox = QCheckBox("Autoretry")
         self.auto_retry_checkbox.setChecked(config.auto_retry)
         self.auto_retry_checkbox.setToolTip(
@@ -638,16 +638,16 @@ class MainWindow(QWidget):
 
         # ---------- Status Bar ----------
         status_row = QHBoxLayout()
-        self.status = QLabel("Idle")
-        self.status.setFixedHeight(20)
-        self.status.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.status_slot = QWidget()
+        self.status_slot.setFixedHeight(20)
+        self.status_slot.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self.credits_label = QLabel("💰 --")
         self.credits_label.setFixedHeight(20)
         self.credits_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.credits_label.setStyleSheet("color:#8fd18f; font-size:11px;")
 
-        status_row.addWidget(self.status)
+        status_row.addWidget(self.status_slot)
         status_row.addWidget(self.credits_label)
         right_layout.addLayout(status_row)
 
@@ -656,6 +656,11 @@ class MainWindow(QWidget):
         # =====================================================
         root_layout.addLayout(left_layout, 1)
         root_layout.addLayout(right_layout, 1)
+
+        # Statusanzeige schwebt über dem Platzhalter und klappt bei langen
+        # Meldungen nach oben auf, statt das Fenster zu vergrößern.
+        self.status = StatusBar(self.status_slot, self)
+        self.status.setText("Idle")
 
         # =====================================================
         # SIGNALS
@@ -674,6 +679,7 @@ class MainWindow(QWidget):
         self._on_model_changed(self.model_dropdown.currentText())
 
         self.load_archive_folders()
+        QTimer.singleShot(0, self.status.sync_geometry)
         QTimer.singleShot(300, self.refresh_credits_async)
 
     # ------------------------------------------------------------------
@@ -1013,6 +1019,8 @@ class MainWindow(QWidget):
         super().resizeEvent(event)
         if hasattr(self, "loading_overlay"):
             self.loading_overlay.resize(self.size())
+        if hasattr(self, "status"):
+            self.status.sync_geometry()
 
     def _set_generate_btn_loading(self) -> None:
         self.generate_btn.setEnabled(False)
