@@ -26,9 +26,7 @@ from utility.config import AppConfig, ConfigError
 from SplashScreenPython.splash_video_webP import SplashScreen
 from utility.models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
 from ui.flashtaskbar import flash_taskbar
-from ui.statusbar import StatusBar
-from ui.toggleswitch import AnimatedToggle
-from ui.generatebutton import GenerateButton
+from qt_controls import AnimatedToggle, GlowButton, StatusBar
 from utility.c2ps import has_c2pa_data, remove_c2pa_data
 
 # =========================
@@ -624,7 +622,7 @@ class MainWindow(QWidget):
         left_layout.addLayout(options_row)
 
         # ---------- Generate Button ----------
-        self.generate_btn = GenerateButton("✨ Generate AI")
+        self.generate_btn = GlowButton("✨ Generate AI")
         self.generate_btn.setFixedHeight(50)
         self.generate_btn.setFont(QFont("", 14, QFont.Weight.Bold))
         left_layout.addWidget(self.generate_btn)
@@ -681,7 +679,6 @@ class MainWindow(QWidget):
         self._on_model_changed(self.model_dropdown.currentText())
 
         self.load_archive_folders()
-        QTimer.singleShot(0, self.status.sync_geometry)
         QTimer.singleShot(300, self.refresh_credits_async)
 
     # ------------------------------------------------------------------
