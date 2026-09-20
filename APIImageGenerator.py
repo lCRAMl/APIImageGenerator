@@ -25,8 +25,9 @@ from utility.config import AppConfig, ConfigError
 from SplashScreenPython.splash_video_webP import SplashScreen
 from utility.models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
 from qt_controls_pyrs import (
-    AnimatedToggle, GlowButton, ReferenceThumb, StatusBar, flash_taskbar
+    AnimatedToggle, ReferenceThumb, StatusBar, flash_taskbar
 )
+from utility.controls import GenerateAiButton
 from utility.c2ps import has_c2pa_data, remove_c2pa_data
 
 # =========================
@@ -622,8 +623,7 @@ class MainWindow(QWidget):
         left_layout.addLayout(options_row)
 
         # ---------- Generate Button ----------
-        self.generate_btn = GlowButton("✨ Generate AI")
-        self.generate_btn.setFixedHeight(50)
+        self.generate_btn = GenerateAiButton("✨ Generate AI", busy_text="✨ Generating")
         self.generate_btn.setFont(QFont("", 14, QFont.Weight.Bold))
         left_layout.addWidget(self.generate_btn)
 
@@ -997,23 +997,6 @@ class MainWindow(QWidget):
     def reference_upload_failed(self, index: int, error: str) -> None:
         self.status.setText(f"Upload Referenzbild {index + 1} fehlgeschlagen: {error}")
 
-    def load_reference(self, index: int) -> None:
-        file, _ = QFileDialog.getOpenFileName(
-            self, "Bild auswählen", "", "Images (*.png *.jpg *.jpeg)"
-        )
-        if not file:
-            return
-        if file.startswith("http"):
-            self.status.setText("URL-Referenz erkannt - kein Preview")
-        else:
-            pix = QPixmap(file).scaled(
-                self.thumb_labels[index].size(),
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            self.thumb_labels[index].setPixmap(pix)
-        self.reference_images[index] = file
-
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         if hasattr(self, "loading_overlay"):
@@ -1023,7 +1006,7 @@ class MainWindow(QWidget):
 
     def _set_generate_btn_loading(self) -> None:
         self.generate_btn.setEnabled(False)
-        self.generate_btn.start_busy("Generating")
+        self.generate_btn.start_busy("✨ Generating")
 
     def _reset_generate_btn(self) -> None:
         self.generate_btn.stop_busy()
