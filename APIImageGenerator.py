@@ -27,6 +27,8 @@ from SplashScreenPython.splash_video_webP import SplashScreen
 from utility.models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
 from ui.flashtaskbar import flash_taskbar
 from ui.statusbar import StatusBar
+from ui.toggleswitch import AnimatedToggle
+from ui.generatebutton import GenerateButton
 from utility.c2ps import has_c2pa_data, remove_c2pa_data
 
 # =========================
@@ -603,10 +605,10 @@ class MainWindow(QWidget):
         left_layout.addLayout(thumb_row)
 
         # ---------- Schalter ----------
-        self.remove_c2pa_checkbox = QCheckBox("C2PA-Daten nach Download entfernen")
+        self.remove_c2pa_checkbox = AnimatedToggle("C2PA-Daten nach Download entfernen")
         self.remove_c2pa_checkbox.setChecked(config.remove_c2pa_data)
         self.remove_c2pa_checkbox.toggled.connect(self._on_remove_c2pa_toggled)
-        self.auto_retry_checkbox = QCheckBox("Autoretry")
+        self.auto_retry_checkbox = AnimatedToggle("Autoretry")
         self.auto_retry_checkbox.setChecked(config.auto_retry)
         self.auto_retry_checkbox.setToolTip(
             "Wiederholt die Generierung nach einem Fehler oder Abbruch immer wieder, "
@@ -622,7 +624,7 @@ class MainWindow(QWidget):
         left_layout.addLayout(options_row)
 
         # ---------- Generate Button ----------
-        self.generate_btn = QPushButton("✨ Generate AI")
+        self.generate_btn = GenerateButton("✨ Generate AI")
         self.generate_btn.setFixedHeight(50)
         self.generate_btn.setFont(QFont("", 14, QFont.Weight.Bold))
         left_layout.addWidget(self.generate_btn)
@@ -1024,11 +1026,11 @@ class MainWindow(QWidget):
 
     def _set_generate_btn_loading(self) -> None:
         self.generate_btn.setEnabled(False)
-        self.generate_btn.setText("⏳ Generating...")
+        self.generate_btn.start_busy("Generating")
 
     def _reset_generate_btn(self) -> None:
+        self.generate_btn.stop_busy()
         self.generate_btn.setEnabled(True)
-        self.generate_btn.setText("✨ Generate AI")
 
 
 # ==========================

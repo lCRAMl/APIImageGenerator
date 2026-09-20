@@ -3,9 +3,12 @@
 from PyQt6.QtWidgets import QWidget, QGraphicsBlurEffect, QGraphicsScene, QGraphicsPixmapItem
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPainter, QPixmap, QColor
+import logging
 import math
 
 from utility.resource_path import resource_path
+
+logger = logging.getLogger(__name__)
 
 
 class LoadingOverlayGemini(QWidget):
@@ -28,7 +31,11 @@ class LoadingOverlayGemini(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        self.icon = QPixmap(str(resource_path(icon_path)))
+        icon_file = resource_path(icon_path)
+        self.icon = QPixmap(str(icon_file))
+        if self.icon.isNull():
+            # Ohne Warnung faellt nur die Stern-Animation lautlos aus.
+            logger.warning("Overlay-Icon nicht gefunden: %s", icon_file)
         self.phase: float = 0.0
         self.bg_pixmap: QPixmap | None = None
 
@@ -92,6 +99,9 @@ class LoadingOverlayGemini(QWidget):
             painter.fillRect(self.rect(), QColor(255, 255, 255, 50))
 
         # Sterne animiert zeichnen
+        if self.icon.isNull():
+            return
+
         for star in self.STAR_CONFIG:
             scale = self.ANIMATION_BASE + self.ANIMATION_AMPLITUDE * math.sin(
                 self.phase + star["phase_offset"]
