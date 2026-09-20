@@ -21,12 +21,12 @@ from PyQt6.QtGui import QPixmap, QPalette, QColor, QFont, QIcon
 from PyQt6.QtCore import Qt, QThread, pyqtSignal as Signal, QTimer
 
 from utility.loading_overlay import LoadingOverlayGemini
-from ui.referencethumb import ReferenceThumb
 from utility.config import AppConfig, ConfigError
 from SplashScreenPython.splash_video_webP import SplashScreen
 from utility.models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
-from ui.flashtaskbar import flash_taskbar
-from qt_controls import AnimatedToggle, GlowButton, StatusBar
+from qt_controls_pyrs import (
+    AnimatedToggle, GlowButton, ReferenceThumb, StatusBar, flash_taskbar
+)
 from utility.c2ps import has_c2pa_data, remove_c2pa_data
 
 # =========================
