@@ -6,7 +6,9 @@
 
 from __future__ import annotations
 
-from qt_controls_pyrs import HaloCheckBox, HaloDropdown, PulseHaloButton, ReferenceThumb
+from qt_controls_pyrs import (
+    HaloCheckBox, HaloDropdown, HaloTabWidget, PulseHaloButton, ReferenceThumb
+)
 
 
 class GenerateAiButton(PulseHaloButton):
@@ -119,6 +121,29 @@ class FolderDropdown(Dropdown):
 
     # Deutsch sortiert: Ä bei A, ohne Groß/Klein, "Ordner 2" vor "Ordner 10".
     SORTED = True
+
+
+class Tabs(HaloTabWidget):
+    """Die Reiter über dem Generate-Knopf: „Einstellungen" und „Prompt".
+
+    Unter dem aktiven Reiter liegt ein dünner Strich. Beim Wechsel gleitet er
+    hinüber, und der Inhalt schiebt sich seitlich hinaus, während der andere
+    hereinkommt — die hinausgehende Seite wird dabei unscharf.
+    """
+
+    # Leiste und Gleiten enden genau am Rahmen des GenerateAiButton: derselbe
+    # Rand, den die Halo-Knöpfe links und rechts für ihren Schein freihalten.
+    ROOM = GenerateAiButton.ROOM
+
+    # Dieselbe Farbe wie QPalette.Highlight des Programms.
+    ACCENT = "#5a8cff"
+
+    # Tempo: so lange gleitet der Inhalt, so lange der Strich (0 = sofort).
+    SLIDE_MS = 430
+    LINE_MS = 550
+
+    # Unschärfe der gleitenden Seiten (0 = keine).
+    BLUR = 8
 
 
 class ParamDropdown(Dropdown):
