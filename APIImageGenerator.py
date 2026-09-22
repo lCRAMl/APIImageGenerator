@@ -47,6 +47,10 @@ FINISHING_TEXT = "Finishing …"
 # ihn selbst frei (für ihren Schein); alles andere bekommt ihn als Rand im
 # Layout. So ragt links wie rechts nichts über den Knopf hinaus.
 EDGE = GenerateAiButton.ROOM
+
+# Deckkraft des Rahmens um den Parameter-Bereich, 0 bis 255. Die
+# Auswahlfelder stehen bei 0.5, also 128 — der Rahmen hier ist blasser.
+PARAM_FRAME_ALPHA = 77
 from build_version import BUILD_INFO, VERSION, BUILD_TIME, APP_NAME
 
 def is_windows_dark_mode() -> bool:
@@ -606,11 +610,23 @@ class MainWindow(QWidget):
 
         # ---------- Dynamischer Parameter-Bereich ----------
         self.param_frame = QFrame()
-        self.param_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        # Rahmen ohne eigenes Widget: Qt zeichnet ihn nach dem Stylesheet.
+        # Oben offen (border-top: none), damit der Bereich unter dem Modellfeld
+        # beginnt, und blasser als die Rahmen der Auswahlfelder (dort 0.5 von
+        # Weiß). Der Selektor mit # trifft nur diesen Rahmen, nicht die Felder
+        # darin — sonst bekäme jede Beschriftung einen eigenen Rahmen.
+        ink = self.palette().color(QPalette.ColorRole.ButtonText)
+        self.param_frame.setFrameShape(QFrame.Shape.NoFrame)
+        self.param_frame.setObjectName("param_frame")
+        self.param_frame.setStyleSheet(
+            f"#param_frame {{ border: 1px solid "
+            f"rgba({ink.red()}, {ink.green()}, {ink.blue()}, {PARAM_FRAME_ALPHA}); "
+            f"border-top: none; }}"
+        )
         self.param_layout = QFormLayout(self.param_frame)
         self.param_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         self.param_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        self.param_layout.setContentsMargins(10, 10, 10, 10)
+        #self.param_layout.setContentsMargins(10, 10, 10, 10)
         self.param_layout.setSpacing(6)
         param_row = QHBoxLayout()
         param_row.setContentsMargins(EDGE, 0, EDGE, 0)
@@ -744,7 +760,9 @@ class MainWindow(QWidget):
         for p in spec.params:
             widget = self._build_param_widget(p)
             self.param_widgets[p.name] = widget
-            self.param_layout.addRow(p.label, widget)
+            # Kästchen bringen ihre Beschriftung selbst mit, rechts daneben.
+            label = "" if isinstance(widget, QCheckBox) else p.label
+            self.param_layout.addRow(label, widget)
 
         # Ungenutzte Referenz-Thumbs deaktivieren
         for i, thumb in enumerate(self.thumb_labels):
@@ -766,7 +784,9 @@ class MainWindow(QWidget):
             return w
 
         if kind == "bool":
-            w = OptionCheckBox()
+            # Die Beschriftung steht rechts neben dem Kästchen, wie bei C2PA
+            # und Autoretry — die Spalte links bleibt für diese Zeile leer.
+            w = OptionCheckBox(p.label)
             w.setChecked(bool(p.default))
             return w
 
