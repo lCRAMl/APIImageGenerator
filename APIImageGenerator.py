@@ -628,7 +628,8 @@ class MainWindow(QWidget):
         for index in range(6):
             if index > 0:
                 thumb_row.addStretch(1)
-            thumb = ReferenceCard(index, self.imgbb_api_key)
+            # Der Dateidialog geht gleich im Archivordner auf.
+            thumb = ReferenceCard(index, self.imgbb_api_key, start_dir=str(ARCHIVE_DIR))
             thumb.cleared.connect(self.clear_reference)
             thumb.uploaded.connect(self.reference_uploaded)
             thumb.upload_failed.connect(self.reference_upload_failed)
