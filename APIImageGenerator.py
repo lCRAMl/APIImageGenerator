@@ -24,10 +24,11 @@ from utility.loading_overlay import LoadingOverlayGemini
 from utility.config import AppConfig, ConfigError
 from SplashScreenPython.splash_video_webP import SplashScreen
 from utility.models_registry import MODELS, ModelSpec, ParamSpec, get_model_by_display_name
-from qt_controls_pyrs import (
-    AnimatedToggle, ReferenceThumb, StatusBar, flash_taskbar
+from qt_controls_pyrs import StatusBar, flash_taskbar
+from utility.controls import (
+    Dropdown, FolderDropdown, GenerateAiButton, OptionCheckBox, ParamDropdown,
+    ReferenceCard
 )
-from utility.controls import GenerateAiButton
 from utility.c2ps import has_c2pa_data, remove_c2pa_data
 
 # =========================
@@ -546,18 +547,16 @@ class MainWindow(QWidget):
         left_layout.addWidget(self.prompt)
 
         # ---------- Folder Dropdown + Info Button (unverändert) ----------
-        self.folder_dropdown = QComboBox()
-        self.folder_dropdown.setFixedHeight(40)
+        self.folder_dropdown = FolderDropdown()
         self.folder_dropdown.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         dropdown_font = QFont()
         dropdown_font.setPointSize(14)
         self.folder_dropdown.setFont(dropdown_font)
 
-        self.info_btn = QPushButton("ℹ")
-        self.info_btn.setFixedSize(40, 40)
-        self.info_btn.setFont(QFont("Segoe UI", 14))
+        self.info_btn = GenerateAiButton("ℹ", busy_text="ℹ")
+        self.info_btn.setFixedSize(70, 70)
+        self.info_btn.setFont(QFont("", 14, QFont.Weight.Bold))
         self.info_btn.setToolTip("Info / About")
-        self.info_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.info_btn.clicked.connect(self._show_splash)
 
         folder_row = QHBoxLayout()
@@ -568,13 +567,11 @@ class MainWindow(QWidget):
 
         # ---------- Model-Dropdown ----------
         model_row = QHBoxLayout()
-        model_label = QLabel("Model")
-        model_label.setFixedWidth(80)
-        self.model_dropdown = QComboBox()
+        self.model_dropdown = Dropdown()
         for spec in MODELS:
             self.model_dropdown.addItem(spec.display_name)
         self.model_dropdown.currentTextChanged.connect(self._on_model_changed)
-        model_row.addWidget(model_label)
+        #model_row.addWidget(model_label)
         model_row.addWidget(self.model_dropdown, 1)
         left_layout.addLayout(model_row)
 
@@ -594,7 +591,7 @@ class MainWindow(QWidget):
         self.reference_images: list = [None] * 6
 
         for index in range(6):
-            thumb = ReferenceThumb(index, self.imgbb_api_key)
+            thumb = ReferenceCard(index, self.imgbb_api_key)
             thumb.cleared.connect(self.clear_reference)
             thumb.uploaded.connect(self.reference_uploaded)
             thumb.upload_failed.connect(self.reference_upload_failed)
@@ -604,10 +601,10 @@ class MainWindow(QWidget):
         left_layout.addLayout(thumb_row)
 
         # ---------- Schalter ----------
-        self.remove_c2pa_checkbox = AnimatedToggle("C2PA-Daten nach Download entfernen")
+        self.remove_c2pa_checkbox = OptionCheckBox("C2PA-Daten nach Download entfernen")
         self.remove_c2pa_checkbox.setChecked(config.remove_c2pa_data)
         self.remove_c2pa_checkbox.toggled.connect(self._on_remove_c2pa_toggled)
-        self.auto_retry_checkbox = AnimatedToggle("Autoretry")
+        self.auto_retry_checkbox = OptionCheckBox("Autoretry")
         self.auto_retry_checkbox.setChecked(config.auto_retry)
         self.auto_retry_checkbox.setToolTip(
             "Wiederholt die Generierung nach einem Fehler oder Abbruch immer wieder, "
@@ -615,8 +612,10 @@ class MainWindow(QWidget):
         )
         self.auto_retry_checkbox.toggled.connect(self._on_auto_retry_toggled)
 
+        # Mittig über dem Generate-Knopf: links und rechts gleich viel Platz.
         options_row = QHBoxLayout()
         options_row.setSpacing(20)
+        options_row.addStretch(1)
         options_row.addWidget(self.remove_c2pa_checkbox)
         options_row.addWidget(self.auto_retry_checkbox)
         options_row.addStretch(1)
@@ -713,7 +712,7 @@ class MainWindow(QWidget):
         kind = p.kind
 
         if kind == "enum":
-            w = QComboBox()
+            w = ParamDropdown()
             for opt in p.options:
                 w.addItem(str(opt))
             if p.default is not None:
@@ -723,7 +722,7 @@ class MainWindow(QWidget):
             return w
 
         if kind == "bool":
-            w = QCheckBox()
+            w = OptionCheckBox()
             w.setChecked(bool(p.default))
             return w
 
@@ -824,9 +823,11 @@ class MainWindow(QWidget):
             return
 
         self.folder_dropdown.setEnabled(True)
-        self.folder_dropdown.addItem("WÄHLE EINEN ORDNER")
+        self.folder_dropdown.setPlaceholderText("WÄHLE EINEN ORDNER")
         for folder in folders:
             self.folder_dropdown.addItem(folder.name)
+        # Noch nichts gewählt: der Platzhalter steht in der Leiste.
+        self.folder_dropdown.setCurrentIndex(-1)
 
     # ------------------------------------------------------------------
     # Generation
@@ -850,7 +851,7 @@ class MainWindow(QWidget):
             return
 
         selected_folder = self.folder_dropdown.currentText()
-        if not self.folder_dropdown.isEnabled() or selected_folder == "WÄHLE EINEN ORDNER":
+        if not self.folder_dropdown.isEnabled() or self.folder_dropdown.currentIndex() < 0:
             self.blink_folder_dropdown()
             self._abort_generation()
             return
@@ -950,21 +951,9 @@ class MainWindow(QWidget):
     # ------------------------------------------------------------------
 
     def blink_folder_dropdown(self) -> None:
-        self._blink_count = 0
-
-        def toggle():
-            if self._blink_count >= 6:
-                self.folder_dropdown.setStyleSheet("")
-                timer.stop()
-                return
-            self.folder_dropdown.setStyleSheet(
-                "QComboBox { background-color: red; }" if self._blink_count % 2 == 0 else ""
-            )
-            self._blink_count += 1
-
-        timer = QTimer(self)
-        timer.timeout.connect(toggle)
-        timer.start(100)
+        # Ein Stylesheet wirkt auf das selbstgezeichnete Feld nicht — dafür
+        # lässt es seinen Rahmen selbst rot blinken.
+        self.folder_dropdown.flash()
 
     def open_image_external(self, event) -> None:
         if self.last_image_path and os.path.exists(self.last_image_path):
