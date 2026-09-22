@@ -36,6 +36,11 @@ from utility.c2ps import has_c2pa_data, remove_c2pa_data
 # =========================
 config = AppConfig()
 ARCHIVE_DIR = config.archive_path
+
+# Beschriftung des Generate-Knopfes während eines Durchgangs: erst Cancel;
+# nach einem Klick darauf wird nur noch der laufende Auftrag abgewartet.
+CANCEL_TEXT = "⊗ Cancel"
+FINISHING_TEXT = "Finishing …"
 from build_version import BUILD_INFO, VERSION, BUILD_TIME, APP_NAME
 
 def is_windows_dark_mode() -> bool:
@@ -604,11 +609,13 @@ class MainWindow(QWidget):
         self.remove_c2pa_checkbox = OptionCheckBox("C2PA-Daten nach Download entfernen")
         self.remove_c2pa_checkbox.setChecked(config.remove_c2pa_data)
         self.remove_c2pa_checkbox.toggled.connect(self._on_remove_c2pa_toggled)
-        self.auto_retry_checkbox = OptionCheckBox("Autoretry")
+        # In Klammern steht, wie oft höchstens wiederholt wird (max_retries).
+        self.auto_retry_checkbox = OptionCheckBox(f"Autoretry ({config.max_retries})")
         self.auto_retry_checkbox.setChecked(config.auto_retry)
         self.auto_retry_checkbox.setToolTip(
-            "Wiederholt die Generierung nach einem Fehler oder Abbruch immer wieder, "
-            "bis ein Bild heruntergeladen wurde. Zum Stoppen den Haken entfernen."
+            f"Wiederholt die Generierung nach einem Fehler bis zu {config.max_retries}-mal "
+            "(max_retries in der config.ini). ⊗ Cancel beendet die Wiederholungen nur "
+            "für den laufenden Durchgang, der Haken bleibt."
         )
         self.auto_retry_checkbox.toggled.connect(self._on_auto_retry_toggled)
 
@@ -622,7 +629,7 @@ class MainWindow(QWidget):
         left_layout.addLayout(options_row)
 
         # ---------- Generate Button ----------
-        self.generate_btn = GenerateAiButton("✨ Generate AI", busy_text="✨ Generating")
+        self.generate_btn = GenerateAiButton("✨ Generate AI", busy_text=CANCEL_TEXT)
         self.generate_btn.setFont(QFont("", 14, QFont.Weight.Bold))
         left_layout.addWidget(self.generate_btn)
 
@@ -664,10 +671,14 @@ class MainWindow(QWidget):
         # =====================================================
         # SIGNALS
         # =====================================================
-        self.generate_btn.clicked.connect(self.start_generation)
+        self.generate_btn.clicked.connect(self._on_generate_clicked)
 
         # Wartezeit zwischen zwei automatischen Versuchen
         self._generation_attempt = 1
+        # Läuft ein Durchgang (auch in der Wartezeit vor einer Wiederholung)?
+        # Und wurde für ihn Cancel gedrückt?
+        self._running = False
+        self._cancelled = False
         self._retry_timer = QTimer(self)
         self._retry_timer.setSingleShot(True)
         self._retry_timer.timeout.connect(self._run_generation)
@@ -833,11 +844,38 @@ class MainWindow(QWidget):
     # Generation
     # ------------------------------------------------------------------
 
+    def _on_generate_clicked(self) -> None:
+        """Derselbe Knopf startet und bricht ab — je nachdem, ob etwas läuft."""
+        if self._running:
+            self.cancel_generation()
+        else:
+            self.start_generation()
+
     def start_generation(self) -> None:
-        """Startet eine neue Generierung (Klick auf den Button)."""
+        """Startet einen neuen Durchgang: einen Versuch und, falls nötig, Wiederholungen."""
         self._retry_timer.stop()
         self._generation_attempt = 1
+        self._cancelled = False
         self._run_generation()
+
+    def cancel_generation(self) -> None:
+        """Cancel: für diesen Durchgang keine Wiederholung mehr.
+
+        Der laufende Auftrag wird nicht abgebrochen — er läuft bei der API
+        ohnehin weiter. Es wird gewartet, bis er ein Bild oder einen Fehler
+        liefert; danach ist Schluss. Das Autoretry-Kästchen bleibt, wie es ist.
+        """
+        if self._retry_timer.isActive():
+            # Zwischen zwei Versuchen läuft kein Auftrag — also sofort Schluss.
+            self._abort_generation("Wiederholung abgebrochen.")
+            return
+        self._cancelled = True
+        self.generate_btn.setEnabled(False)
+        self.generate_btn.setBusyText(FINISHING_TEXT)
+        self.status.setText(
+            "Abgebrochen – keine Wiederholung mehr, warte noch auf das Ergebnis "
+            "des laufenden Auftrags ..."
+        )
 
     def _run_generation(self) -> None:
         """Führt einen einzelnen Generierungsversuch aus."""
@@ -912,23 +950,38 @@ class MainWindow(QWidget):
 
     def handle_status(self, text: str) -> None:
         if self._generation_attempt > 1:
-            text = f"[Versuch {self._generation_attempt}] {text}"
+            text = f"[Wiederholung {self._generation_attempt - 1}/{config.max_retries}] {text}"
+        if self._cancelled:
+            text = f"[Abgebrochen, letzter Auftrag] {text}"
         self.status.setText(text)
 
     def handle_failure(self, message: str) -> None:
-        """Wiederholt die Generierung, solange der Auto-Retry-Schalter an ist."""
-        if self.auto_retry_checkbox.isChecked():
+        """Wiederholt die Generierung — höchstens max_retries-mal, nach Cancel nicht mehr."""
+        retries_done = self._generation_attempt - 1
+        retry = (
+            self.auto_retry_checkbox.isChecked()
+            and not self._cancelled
+            and retries_done < config.max_retries
+        )
+        if retry:
             delay_s = max(1, config.retry_delay_s)
             self._generation_attempt += 1
             self.status.setText(
-                f"Fehler: {message} – Versuch {self._generation_attempt} in {delay_s} s ..."
+                f"Fehler: {message} – Wiederholung {retries_done + 1}/{config.max_retries} "
+                f"in {delay_s} s ..."
             )
             self._retry_timer.start(delay_s * 1000)
             return
 
+        if self._cancelled:
+            text = f"Fehler: {message} (abgebrochen, keine Wiederholung)"
+        elif self.auto_retry_checkbox.isChecked():
+            text = f"Fehler nach {config.max_retries} Wiederholungen: {message}"
+        else:
+            text = f"Fehler: {message}"
         self.loading_overlay.stop()
         self._reset_generate_btn()
-        self.status.setText(f"Fehler: {message}")
+        self.status.setText(text)
         flash_taskbar(int(self.winId()))
 
     def _on_auto_retry_toggled(self, checked: bool) -> None:
@@ -994,10 +1047,14 @@ class MainWindow(QWidget):
             self.status.sync_geometry()
 
     def _set_generate_btn_loading(self) -> None:
-        self.generate_btn.setEnabled(False)
-        self.generate_btn.start_busy("✨ Generating")
+        # Der Knopf bleibt klickbar — solange der Durchgang läuft, ist er Cancel.
+        self._running = True
+        self.generate_btn.setEnabled(True)
+        self.generate_btn.start_busy(CANCEL_TEXT)
 
     def _reset_generate_btn(self) -> None:
+        self._running = False
+        self._cancelled = False
         self.generate_btn.stop_busy()
         self.generate_btn.setEnabled(True)
 

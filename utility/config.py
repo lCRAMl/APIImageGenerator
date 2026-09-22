@@ -32,6 +32,7 @@ class AppConfig:
     DEFAULT_REMOVE_C2PA_DATA: bool = True
     DEFAULT_AUTO_RETRY: bool = False
     DEFAULT_RETRY_DELAY_S: int = 5
+    DEFAULT_MAX_RETRIES: int = 3
     DEFAULT_DOWNLOAD_ATTEMPTS: int = 3
     DEFAULT_DOWNLOAD_TIMEOUT_S: int = 60
 
@@ -59,6 +60,7 @@ class AppConfig:
         self.remove_c2pa_data: bool = self.DEFAULT_REMOVE_C2PA_DATA
         self.auto_retry: bool = self.DEFAULT_AUTO_RETRY
         self.retry_delay_s: int = self.DEFAULT_RETRY_DELAY_S
+        self.max_retries: int = self.DEFAULT_MAX_RETRIES
 
         self.download_attempts: int = self.DEFAULT_DOWNLOAD_ATTEMPTS
         self.download_timeout_s: int = self.DEFAULT_DOWNLOAD_TIMEOUT_S
@@ -99,6 +101,7 @@ class AppConfig:
             "remove_c2pa_data": str(self.remove_c2pa_data),
             "auto_retry":       str(self.auto_retry),
             "retry_delay_s":    str(self.retry_delay_s),
+            "max_retries":      str(self.max_retries),
         }
         self.config[self.SECTION_DOWNLOAD] = {
             "download_attempts":  str(self.download_attempts),
@@ -153,6 +156,7 @@ class AppConfig:
             (self.SECTION_OPTIONS,  "remove_c2pa_data"),
             (self.SECTION_OPTIONS,  "auto_retry"),
             (self.SECTION_OPTIONS,  "retry_delay_s"),
+            (self.SECTION_OPTIONS,  "max_retries"),
             (self.SECTION_DOWNLOAD, "download_attempts"),
             (self.SECTION_DOWNLOAD, "download_timeout_s"),
         )
@@ -215,6 +219,10 @@ class AppConfig:
             self.auto_retry = self.DEFAULT_AUTO_RETRY
         self.retry_delay_s = self._get_positive_int(
             self.SECTION_OPTIONS, "retry_delay_s", self.DEFAULT_RETRY_DELAY_S
+        )
+        # Wie oft Autoretry nach einem Fehler höchstens neu startet.
+        self.max_retries = self._get_positive_int(
+            self.SECTION_OPTIONS, "max_retries", self.DEFAULT_MAX_RETRIES
         )
 
     def _parse_download(self) -> None:
