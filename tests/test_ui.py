@@ -1,9 +1,12 @@
 import pytest
 from PyQt6.QtWidgets import QCheckBox
 
+from core.build_info import BuildInfo
 from core.config import AppConfig
 from core.models_registry import MODELS
 from ui.ui import MainWindow
+
+BUILD_INFO = BuildInfo("Test", "v0", "", "", "")
 
 
 @pytest.fixture
@@ -24,7 +27,7 @@ def config(tmp_path):
 
 @pytest.fixture
 def window(qtbot, config):
-    main_window = MainWindow(config, "Test \nv0")
+    main_window = MainWindow(config, BUILD_INFO)
     qtbot.addWidget(main_window)
     yield main_window
     if main_window.credits_worker is not None:
@@ -41,7 +44,7 @@ def test_folders_are_listed_without_preselection(window):
 def test_missing_archive_disables_generation(qtbot, tmp_path):
     path = tmp_path / "config.ini"
     path.write_text(f"[Paths]\narchive_path = {tmp_path / 'gibt-es-nicht'}\n", encoding="utf-8")
-    main_window = MainWindow(AppConfig(path), "Test")
+    main_window = MainWindow(AppConfig(path), BUILD_INFO)
     qtbot.addWidget(main_window)
     assert not main_window.folder_dropdown.isEnabled()
     assert not main_window.generate_btn.isEnabled()

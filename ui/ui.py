@@ -16,17 +16,19 @@ from PyQt6.QtWidgets import (
     QStyleFactory, QVBoxLayout, QWidget,
 )
 from qt_controls_pyrs import StatusBar, flash_taskbar
+from qt_splash import SplashConfig
 
+from core.build_info import BuildInfo
 from core.config import AppConfig, ConfigError
 from core.kie_api import KieAPI
 from core.models_registry import MODELS, ParamSpec, get_model_by_display_name
 from core.paths import resource_path
-from SplashScreenPython.splash_video_webP import SplashScreen
 from ui.controls import (
     Dropdown, FolderDropdown, GenerateAiButton, OptionCheckBox, ParamDropdown,
     ReferenceCard, Tabs,
 )
 from ui.loading_overlay import LoadingOverlayGemini
+from ui.splash import build_splash_config, show_splash
 from ui.workers import CreditsWorker, GenerationWorker
 
 # Beschriftung des Generate-Knopfes während eines Durchgangs: erst Cancel;
@@ -96,7 +98,7 @@ def apply_dark_palette(app: QApplication) -> None:
 # ==========================
 
 class MainWindow(QWidget):
-    def __init__(self, config: AppConfig, build_info: str) -> None:
+    def __init__(self, config: AppConfig, build_info: BuildInfo) -> None:
         super().__init__()
 
         self.config = config
@@ -120,7 +122,7 @@ class MainWindow(QWidget):
         self.worker: GenerationWorker | None = None
         self.credits_worker: CreditsWorker | None = None
 
-        self.setWindowTitle(build_info)
+        self.setWindowTitle(build_info.window_title)
         self.resize(1600, 900)
         self.setWindowIcon(QIcon(str(resource_path("assets/gemini_icon.ico"))))
 
@@ -419,8 +421,12 @@ class MainWindow(QWidget):
     # ------------------------------------------------------------------
 
     def _show_splash(self) -> None:
-        splash = SplashScreen(build_info=self.build_info, parent=self)
-        splash.show_centered(self)
+        try:
+            splash_config = build_splash_config(self.config)
+        except ValueError as exc:
+            self.status.setText(f"[Splash] in config.ini ungültig ({exc}) – Standardwerte werden verwendet.")
+            splash_config = SplashConfig()
+        show_splash(self, splash_config, self.build_info)
 
     # ------------------------------------------------------------------
     # Ordnerauswahl

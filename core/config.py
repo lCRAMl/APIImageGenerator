@@ -21,6 +21,7 @@ class AppConfig:
     SECTION_URLS = "URLs"
     SECTION_OPTIONS = "Options"
     SECTION_DOWNLOAD = "Download"
+    SECTION_SPLASH = "Splash"
 
     # ==============================
     # Default-Werte
@@ -34,6 +35,13 @@ class AppConfig:
     DEFAULT_MAX_RETRIES: int = 3
     DEFAULT_DOWNLOAD_ATTEMPTS: int = 3
     DEFAULT_DOWNLOAD_TIMEOUT_S: int = 60
+
+    # Text im Splash (ℹ-Knopf). Leere Schriftart = Standardschrift des Systems.
+    # Farben als "#rrggbb" oder Qt-Farbname ("white", "black" ...).
+    DEFAULT_SPLASH_FONT_FAMILY: str = ""
+    DEFAULT_SPLASH_FONT_SIZE_PT: int = 20
+    DEFAULT_SPLASH_TEXT_COLOR: str = "#000000"
+    DEFAULT_SPLASH_OUTLINE_COLOR: str = "#ffffff"
 
     # Dummy-Defaults für URLs. Beim ersten Start werden diese in die config.ini
     # geschrieben und sollen vom Nutzer manuell angepasst werden.
@@ -64,6 +72,11 @@ class AppConfig:
 
         self.download_attempts: int = self.DEFAULT_DOWNLOAD_ATTEMPTS
         self.download_timeout_s: int = self.DEFAULT_DOWNLOAD_TIMEOUT_S
+
+        self.splash_font_family: str = self.DEFAULT_SPLASH_FONT_FAMILY
+        self.splash_font_size_pt: int = self.DEFAULT_SPLASH_FONT_SIZE_PT
+        self.splash_text_color: str = self.DEFAULT_SPLASH_TEXT_COLOR
+        self.splash_outline_color: str = self.DEFAULT_SPLASH_OUTLINE_COLOR
 
         self._load_or_create()
 
@@ -105,6 +118,12 @@ class AppConfig:
         self.config[self.SECTION_DOWNLOAD] = {
             "download_attempts":  str(self.download_attempts),
             "download_timeout_s": str(self.download_timeout_s),
+        }
+        self.config[self.SECTION_SPLASH] = {
+            "font_family":   self.splash_font_family,
+            "font_size_pt":  str(self.splash_font_size_pt),
+            "text_color":    self.splash_text_color,
+            "outline_color": self.splash_outline_color,
         }
 
         try:
@@ -148,6 +167,7 @@ class AppConfig:
         self._parse_urls()
         self._parse_options()
         self._parse_download()
+        self._parse_splash()
 
         # Fehlende Einträge (z.B. Config aus älterer Version) mit den Defaults
         # in die Datei schreiben, damit sie dort anpassbar sind.
@@ -158,6 +178,10 @@ class AppConfig:
             (self.SECTION_OPTIONS,  "max_retries"),
             (self.SECTION_DOWNLOAD, "download_attempts"),
             (self.SECTION_DOWNLOAD, "download_timeout_s"),
+            (self.SECTION_SPLASH,   "font_family"),
+            (self.SECTION_SPLASH,   "font_size_pt"),
+            (self.SECTION_SPLASH,   "text_color"),
+            (self.SECTION_SPLASH,   "outline_color"),
         )
         if not all(self.config.has_option(section, key) for section, key in expected):
             logger.info("Einträge fehlen in der Config – Defaults werden eingetragen.")
@@ -223,6 +247,21 @@ class AppConfig:
         self.download_timeout_s = self._get_positive_int(
             self.SECTION_DOWNLOAD, "download_timeout_s", self.DEFAULT_DOWNLOAD_TIMEOUT_S
         )
+
+    def _parse_splash(self) -> None:
+        self.splash_font_family = self.config.get(
+            self.SECTION_SPLASH, "font_family", fallback=self.DEFAULT_SPLASH_FONT_FAMILY
+        ).strip()
+        self.splash_font_size_pt = self._get_positive_int(
+            self.SECTION_SPLASH, "font_size_pt", self.DEFAULT_SPLASH_FONT_SIZE_PT
+        )
+        # Ob die Farben gültig sind, prüft erst die GUI (ui/splash.py) — dafür braucht es Qt.
+        self.splash_text_color = self.config.get(
+            self.SECTION_SPLASH, "text_color", fallback=self.DEFAULT_SPLASH_TEXT_COLOR
+        ).strip()
+        self.splash_outline_color = self.config.get(
+            self.SECTION_SPLASH, "outline_color", fallback=self.DEFAULT_SPLASH_OUTLINE_COLOR
+        ).strip()
 
     def _get_bool(self, section: str, key: str, default: bool) -> bool:
         """Liest einen Ja/Nein-Wert; bei ungültigem Wert wird der Default verwendet."""

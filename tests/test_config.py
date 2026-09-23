@@ -58,3 +58,23 @@ def test_save_round_trip(tmp_path):
     config.auto_retry = True
     config.save()
     assert AppConfig(path).auto_retry is True
+
+
+def test_splash_settings(tmp_path):
+    path = tmp_path / "config.ini"
+    path.write_text(
+        "[Splash]\nfont_family = Segoe UI\nfont_size_pt = 14\ntext_color = #ff0000\noutline_color = black\n",
+        encoding="utf-8",
+    )
+    config = AppConfig(path)
+    assert config.splash_font_family == "Segoe UI"
+    assert config.splash_font_size_pt == 14
+    assert (config.splash_text_color, config.splash_outline_color) == ("#ff0000", "black")
+
+
+def test_splash_defaults_are_written(tmp_path):
+    path = tmp_path / "config.ini"
+    AppConfig(path)
+    text = path.read_text(encoding="utf-8")
+    assert "[Splash]" in text
+    assert "font_size_pt = 20" in text

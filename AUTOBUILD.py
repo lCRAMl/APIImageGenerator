@@ -11,18 +11,24 @@ import shutil
 import time
 from pathlib import Path
 
+from core.build_info import APP_NAME
+from ui.splash import BUNDLED_VIDEO_DIR, SPLASH_TRACKING_NAME, SPLASH_VIDEO_DIR, SPLASH_VIDEO_NAME
+
 # =========================
 # CONFIG
 # =========================
-
-APP_NAME = "API Image Generator"
 
 ICON_PATH = "assets/gemini_icon.ico"
 
 ASSET_PATHS = {
     "assets": "assets",
-    "SplashScreenPython\\assets": "assets"
 }
+
+# Splash-Video mit Tracking-Datei aus dem SplashScreenPython-Projekt
+SPLASH_FILES = [
+    SPLASH_VIDEO_DIR / SPLASH_VIDEO_NAME,
+    SPLASH_VIDEO_DIR / SPLASH_TRACKING_NAME,
+]
 
 VERSION_FILE = "build_version.py"
 
@@ -228,6 +234,12 @@ def build_pyinstaller(exe_name):
     for source, target in ASSET_PATHS.items():
         if os.path.exists(source):
             cmd.append(f"--add-data={source}{os.pathsep}{target}")
+
+    for splash_file in SPLASH_FILES:
+        if splash_file.exists():
+            cmd.append(f"--add-data={splash_file}{os.pathsep}{BUNDLED_VIDEO_DIR}")
+        else:
+            print(f"⚠ Splash-Datei fehlt, Build ohne sie: {splash_file}")
 
     # =========================
     # ADD C2PA DLL (dynamisch per ctypes geladen, von PyInstaller nicht

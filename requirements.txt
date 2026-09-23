@@ -4,3 +4,6 @@ requests>=2.32
 c2pa-python>=0.37
 # Eigene Widget-Sammlung (Knöpfe, Auswahlfelder, Reiter, Statuszeile, Miniaturen)
 qt-controls-pyrs @ git+https://github.com/lCRAMl/QtControlsPyRS.git
+# Splash hinter dem ℹ-Knopf. Das Video liegt im SplashScreenPython-Projekt (assets/splashvid),
+# deshalb für die Entwicklung editierbar installieren, siehe README.
+qt-splash @ git+https://github.com/lCRAMl/SplashScreenPython.git
