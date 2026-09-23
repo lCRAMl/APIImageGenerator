@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Lokale Einstellungen mit API-Keys — nie einchecken
+/config.ini
+
+# Wird von AUTOBUILD.py bei jedem Build erzeugt
+/build_version.py
+
+# Build-Ausgabe (PyInstaller)
+/output/
+/pyinstaller_build/
+*.spec
+
+# Windows / Werkzeuge
+Thumbs.db
+*.db
+/.claude/
+/testing.py

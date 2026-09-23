@@ -1,0 +1,6 @@
+# Laufzeit-Abhängigkeiten
+PyQt6>=6.11
+requests>=2.32
+c2pa-python>=0.37
+# Eigene Widget-Sammlung (Knöpfe, Auswahlfelder, Reiter, Statuszeile, Miniaturen)
+qt-controls-pyrs @ git+https://github.com/lCRAMl/QtControlsPyRS.git

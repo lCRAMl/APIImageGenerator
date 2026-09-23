@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import logging
-import sys
-from pathlib import Path
 import configparser
+import logging
+from pathlib import Path
+
+from core.paths import config_file_path
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +16,6 @@ class ConfigError(Exception):
 
 
 class AppConfig:
-    CONFIG_NAME = "..//config.ini"
-
     SECTION_PATHS = "Paths"
     SECTION_API = "API"
     SECTION_URLS = "URLs"
@@ -43,9 +42,10 @@ class AppConfig:
     DEFAULT_CREDITS_URL:  str = "https://api.kie.ai/api/v1/chat/credit"
     DEFAULT_CALLBACK_URL: str = "https://example.com/callback"
 
-    def __init__(self) -> None:
+    def __init__(self, config_path: Path | None = None) -> None:
+        """Lädt die config.ini; ohne config_path die des Programms (siehe paths.py)."""
         self.config = configparser.ConfigParser()
-        self.config_path = self._get_config_path()
+        self.config_path = config_path or config_file_path()
 
         # Felder mit Defaults vorbelegen
         self.archive_path: Path = self.DEFAULT_ARCHIVE_PATH
@@ -77,10 +77,9 @@ class AppConfig:
         Raises:
             ConfigError: Wenn die Datei nicht geschrieben werden kann.
         """
-        # Veraltete Sektionen entfernen (z.B. alte [Prompt]-Sektion aus früheren Versionen)
-        for legacy in ("Prompt",):
-            if self.config.has_section(legacy):
-                self.config.remove_section(legacy)
+        # Veraltete [Prompt]-Sektion aus früheren Versionen entfernen
+        if self.config.has_section("Prompt"):
+            self.config.remove_section("Prompt")
 
         self.config[self.SECTION_PATHS] = {
             "archive_path": str(self.archive_path),
@@ -203,20 +202,12 @@ class AppConfig:
         )
 
     def _parse_options(self) -> None:
-        self.remove_c2pa_data = self.config.getboolean(
-            self.SECTION_OPTIONS, "remove_c2pa_data", fallback=self.DEFAULT_REMOVE_C2PA_DATA
+        self.remove_c2pa_data = self._get_bool(
+            self.SECTION_OPTIONS, "remove_c2pa_data", self.DEFAULT_REMOVE_C2PA_DATA
         )
-        try:
-            self.auto_retry = self.config.getboolean(
-                self.SECTION_OPTIONS, "auto_retry", fallback=self.DEFAULT_AUTO_RETRY
-            )
-        except ValueError:
-            logger.warning(
-                "auto_retry '%s' ist ungültig – Default %s wird verwendet.",
-                self.config.get(self.SECTION_OPTIONS, "auto_retry", fallback=""),
-                self.DEFAULT_AUTO_RETRY,
-            )
-            self.auto_retry = self.DEFAULT_AUTO_RETRY
+        self.auto_retry = self._get_bool(
+            self.SECTION_OPTIONS, "auto_retry", self.DEFAULT_AUTO_RETRY
+        )
         self.retry_delay_s = self._get_positive_int(
             self.SECTION_OPTIONS, "retry_delay_s", self.DEFAULT_RETRY_DELAY_S
         )
@@ -233,6 +224,17 @@ class AppConfig:
             self.SECTION_DOWNLOAD, "download_timeout_s", self.DEFAULT_DOWNLOAD_TIMEOUT_S
         )
 
+    def _get_bool(self, section: str, key: str, default: bool) -> bool:
+        """Liest einen Ja/Nein-Wert; bei ungültigem Wert wird der Default verwendet."""
+        try:
+            return self.config.getboolean(section, key, fallback=default)
+        except ValueError:
+            logger.warning(
+                "%s '%s' ist ungültig – Default %s wird verwendet.",
+                key, self.config.get(section, key, fallback=""), default,
+            )
+            return default
+
     def _get_positive_int(self, section: str, key: str, default: int) -> int:
         """Liest eine Ganzzahl >= 1; bei ungültigem Wert wird der Default verwendet."""
         try:
@@ -246,10 +248,3 @@ class AppConfig:
             )
             return default
         return value
-
-    @staticmethod
-    def _get_config_path() -> Path:
-        """Gibt den Pfad zur config.ini zurück (neben Executable oder Quellcode)."""
-        if getattr(sys, "frozen", False):
-            return Path(sys.executable).parent / AppConfig.CONFIG_NAME
-        return Path(__file__).resolve().parent / AppConfig.CONFIG_NAME

@@ -95,7 +95,7 @@ MODELS: list[ModelSpec] = [
                       options=["png", "jpg"], default="png"),
         ],
     ),
-    
+
     # ----- Google - Nano Banana Pro -----
     ModelSpec(
         display_name="Google - Nano Banana Pro",
@@ -114,7 +114,7 @@ MODELS: list[ModelSpec] = [
                       options=["png", "jpg"], default="png"),
         ],
     ),
-    
+
     # ----- Google - Nano Banana Edit -----
     ModelSpec(
         display_name="Google - Nano Banana Edit",
@@ -146,7 +146,7 @@ MODELS: list[ModelSpec] = [
                       options=["1K", "2K", "4K"], default="4K"),
         ],
     ),
-    
+
     # ----- GPT Image 1.5 - Image to Image -----
     ModelSpec(
         display_name="GPT Image-1.5 - Image to Image",

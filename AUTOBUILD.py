@@ -1,6 +1,9 @@
-#AUTOBUILD.py
+# AUTOBUILD.py
+#
+# Baut die EXE mit PyInstaller: schreibt build_version.py (Version aus git),
+# bündelt Assets und die C2PA-DLL und legt eine Startmenü-Verknüpfung an.
+# Aufruf: python AUTOBUILD.py
 
-from ensurepip import version
 import subprocess
 from datetime import datetime
 import os
@@ -26,8 +29,6 @@ VERSION_FILE = "build_version.py"
 OUTPUT_DIR = "output"
 BUILD_DIR = "pyinstaller_build"
 
-AUTO_PY_TO_EXE_LAUNCH = False
-
 
 # =========================
 # VERSION HELPERS
@@ -42,13 +43,16 @@ def get_git_version():
         return "0.0.0-0-unknown"
 
 def get_git_commit():
-    return subprocess.check_output(
-        ["git", "rev-parse", "--short", "HEAD"]
-    ).decode().strip()
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"]
+        ).decode().strip()
+    except Exception:
+        return "unknown"
 
 def get_git_commit_url():
     try:
-        # short commit hash
+        # voller Commit-Hash
         commit = subprocess.check_output(
             ["git", "rev-parse", "HEAD"]
         ).decode().strip()
@@ -58,18 +62,11 @@ def get_git_commit_url():
             ["git", "config", "--get", "remote.origin.url"]
         ).decode().strip()
 
-        # normalize SSH → HTTPS
+        # SSH-Adresse in HTTPS umwandeln, ".git" am Ende entfernen
         if remote.startswith("git@github.com:"):
-            remote = remote.replace("git@github.com:", "https://github.com/")
-            remote = remote.replace(".git", "")
-        elif remote.startswith("https://") and remote.endswith(".git"):
-            remote = remote[:-4]
+            remote = remote.replace("git@github.com:", "https://github.com/", 1)
+        remote = remote.removesuffix(".git")
 
-        # build URL (GitHub-style)
-        if "github.com" in remote:
-            return f"{remote}/commit/{commit}"
-
-        # fallback generic
         return f"{remote}/commit/{commit}"
 
     except Exception:
@@ -83,13 +80,13 @@ def get_build_time():
 # WRITE VERSION FILE
 # =========================
 
-def write_version_file(version, build_time, COMMIT, COMMIT_URL):
+def write_version_file(version, build_time, commit, commit_url):
     content = f'''# AUTO GENERATED FILE
 APP_NAME = "{APP_NAME}"
 VERSION = "{version}"
 BUILD_TIME = "{build_time}"
-COMMIT = "{COMMIT}"
-COMMIT_URL = "{COMMIT_URL}"
+COMMIT = "{commit}"
+COMMIT_URL = "{commit_url}"
 BUILD_INFO = "{APP_NAME} \\n{version} \\n{build_time}"
 '''
 
@@ -221,7 +218,6 @@ def build_pyinstaller(exe_name):
         f"--workpath={BUILD_DIR}",
 
         "--clean",
-        "--noconfirm",
 
         f"--icon={ICON_PATH}",
     ]
@@ -261,22 +257,22 @@ def main():
 
     version = get_git_version()
     build_time = get_build_time()
-    COMMIT = get_git_commit()
-    COMMIT_URL = get_git_commit_url()
+    commit = get_git_commit()
+    commit_url = get_git_commit_url()
 
     print(f"📦 Git Version: {version}")
     print(f"⏱ Build Time: {build_time}")
-    print(f"🔗 Commit: {COMMIT}")
-    print(f"🌐 Commit URL: {COMMIT_URL}")
+    print(f"🔗 Commit: {commit}")
+    print(f"🌐 Commit URL: {commit_url}")
 
-    write_version_file(version, build_time, COMMIT, COMMIT_URL)
+    write_version_file(version, build_time, commit, commit_url)
 
     safe_app = APP_NAME.replace(" ", "")
     safe_version = version.replace("+", "_").replace(" ", "_")
     exe_name = f"{safe_app}_{safe_version}"
 
     build_pyinstaller(exe_name)
-    
+
     exe_file = f"{exe_name}.exe"
     exe_path = os.path.abspath(os.path.join(OUTPUT_DIR, exe_file))
 

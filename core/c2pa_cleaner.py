@@ -1,27 +1,19 @@
-import sys
+# c2pa_cleaner.py
+#
+# Erkennt und entfernt C2PA-Metadaten (Herkunftsnachweis, "Content
+# Credentials") aus heruntergeladenen JPEG- und PNG-Bildern.
+
+import logging
 from pathlib import Path
-from typing import Union
 
 from c2pa import Reader
 
-PathLike = Union[str, Path]
+logger = logging.getLogger(__name__)
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
-def read_c2pa_data(media_path: PathLike) -> None:
-    print(f"Reading {media_path}")
-    try:
-        reader = Reader(str(media_path))
-        manifest_json = reader.json()
-        print(manifest_json)
-        reader.close()
-
-    except Exception as e:
-        print(f"Error reading C2PA data from {media_path}: {e}")
-
-
-def has_c2pa_data(media_path: PathLike) -> bool:
+def has_c2pa_data(media_path: str | Path) -> bool:
     """Prüft, ob eine Datei C2PA-Metadaten (ein Manifest) enthält.
 
     Nutzt Reader.try_create, das None zurückgibt statt eine Exception zu
@@ -32,8 +24,8 @@ def has_c2pa_data(media_path: PathLike) -> bool:
     """
     try:
         reader = Reader.try_create(str(media_path))
-    except Exception as e:
-        print(f"Fehler beim Prüfen auf C2PA-Daten in {media_path}: {e}")
+    except Exception as exc:
+        logger.warning("Fehler beim Prüfen auf C2PA-Daten in %s: %s", media_path, exc)
         return False
 
     if reader is None:
@@ -43,7 +35,7 @@ def has_c2pa_data(media_path: PathLike) -> bool:
     return True
 
 
-def remove_c2pa_data(media_path: PathLike) -> bool:
+def remove_c2pa_data(media_path: str | Path) -> bool:
     """Entfernt C2PA-Daten vollständig und unwiderruflich aus einer Datei.
 
     Die C2PA-Manifest-Box (JUMBF) wird nicht überschrieben oder unkenntlich
@@ -169,21 +161,3 @@ def _strip_png_cabx(data: bytes) -> tuple[bytes, bool]:
 
     return bytes(out), removed
 
-
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        media_path = "Z:\\Instagram\\Ava Addams\\ai\\2026-07-26_05-47-36.jpg"
-    else:
-        media_path = sys.argv[1]
-
-    if has_c2pa_data(media_path):
-        print(f"{media_path} enthält C2PA-Daten.")
-        read_c2pa_data(media_path)
-        if remove_c2pa_data(media_path):
-            print("C2PA-Daten entfernt.")
-        if has_c2pa_data(media_path):
-            print("WARNUNG: C2PA-Daten konnten nicht vollständig entfernt werden.")
-        else:
-            print("Verifiziert: keine C2PA-Daten mehr vorhanden.")
-    else:
-        print(f"{media_path} enthält keine C2PA-Daten.")

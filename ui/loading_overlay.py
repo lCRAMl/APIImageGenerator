@@ -6,7 +6,7 @@ from PyQt6.QtGui import QPainter, QPixmap, QColor
 import logging
 import math
 
-from utility.resource_path import resource_path
+from core.paths import resource_path
 
 logger = logging.getLogger(__name__)
 

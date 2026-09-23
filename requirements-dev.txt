@@ -1,0 +1,6 @@
+# Für Tests und Build, zusätzlich zu requirements.txt
+-r requirements.txt
+pytest>=9
+pytest-qt>=4.5
+pyinstaller>=6.22
+pywin32>=311   # AUTOBUILD.py: Startmenü-Verknüpfung
