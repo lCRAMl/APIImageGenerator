@@ -12,7 +12,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor, QFont, QIcon, QPalette, QPixmap
 from PyQt6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QFrame,
-    QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit, QSizePolicy, QSpinBox,
+    QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QSpinBox,
     QStyleFactory, QVBoxLayout, QWidget,
 )
 from qt_controls_pyrs import StatusBar, flash_taskbar
@@ -25,7 +25,7 @@ from core.models_registry import MODELS, ParamSpec, get_model_by_display_name
 from core.paths import resource_path
 from ui.controls import (
     Dropdown, FolderDropdown, GenerateAiButton, OptionCheckBox, ParamDropdown,
-    ReferenceCard, Tabs,
+    PromptBox, ReferenceCard,
 )
 from ui.loading_overlay import LoadingOverlayGemini
 from ui.splash import build_splash_config, show_splash
@@ -37,7 +37,7 @@ CANCEL_TEXT = "⊗ Cancel"
 FINISHING_TEXT = "Finishing …"
 
 # Abstand von der Kante der linken Spalte bis zum sichtbaren Rahmen des
-# ruhenden Generate-Knopfes. Knöpfe, Auswahlfelder und die Reiterleiste halten
+# ruhenden Generate-Knopfes. Knöpfe, Auswahlfelder und das Prompt-Feld halten
 # ihn selbst frei (für ihren Schein); alles andere bekommt ihn als Rand im
 # Layout. So ragt links wie rechts nichts über den Knopf hinaus.
 EDGE = GenerateAiButton.ROOM
@@ -133,29 +133,21 @@ class MainWindow(QWidget):
         left_layout  = QVBoxLayout()
         right_layout = QVBoxLayout()
 
-        # ---------- Reiter: „Einstellungen" und „Prompt" ----------
-        # Links oben die Reiter, darunter der Generate-Knopf.
-        self.tabs = Tabs()
-        left_layout.addWidget(self.tabs, 1)
+        # ---------- Prompt ----------
+        # Im Layout steht nur ein Platzhalter; das Feld selbst schwebt darüber
+        # (wie die Statuszeile). Nur so kann es sich über die Einstellungen
+        # ausfahren, ohne sie zu verschieben.
+        self.prompt_slot = QWidget()
+        self.prompt_slot.setMinimumHeight(180)
+        self.prompt_slot.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+        left_layout.addWidget(self.prompt_slot, 1)
 
-        self.settings_page = QWidget()
-        settings_layout = QVBoxLayout(self.settings_page)
-        settings_layout.setContentsMargins(0, 0, 0, 0)
-        # Der freie Platz liegt oben: die Einstellungen sitzen wie bisher
-        # direkt über dem Generate-Knopf.
-        settings_layout.addStretch(1)
-        self.tabs.addTab(self.settings_page, "Einstellungen")
-
-        prompt_page = QWidget()
-        prompt_layout = QVBoxLayout(prompt_page)
-        prompt_layout.setContentsMargins(EDGE, 10, EDGE, 0)
-        self.tabs.addTab(prompt_page, "Prompt")
-
-        # ---------- Prompt (schlicht, kein Highlighting) ----------
-        self.prompt = QPlainTextEdit()
+        self.prompt = PromptBox(self.prompt_slot, self)
         self.prompt.setPlaceholderText("Prompt eingeben ...")
-        self.prompt.setMinimumHeight(180)
-        prompt_layout.addWidget(self.prompt)
+        # Wie weit es ausfahren darf, steht erst fest, wenn der Generate-Knopf
+        # gebaut ist: set_expand_stop() weiter unten.
 
         # ---------- Ordnerauswahl + Info-Knopf ----------
         self.folder_dropdown = FolderDropdown()
@@ -174,7 +166,7 @@ class MainWindow(QWidget):
         folder_row.setSpacing(6)
         folder_row.addWidget(self.folder_dropdown)
         folder_row.addWidget(self.info_btn)
-        settings_layout.addLayout(folder_row)
+        left_layout.addLayout(folder_row)
 
         # ---------- Modellauswahl ----------
         model_row = QHBoxLayout()
@@ -183,7 +175,7 @@ class MainWindow(QWidget):
             self.model_dropdown.addItem(spec.display_name)
         self.model_dropdown.currentTextChanged.connect(self._on_model_changed)
         model_row.addWidget(self.model_dropdown, 1)
-        settings_layout.addLayout(model_row)
+        left_layout.addLayout(model_row)
 
         # ---------- Dynamischer Parameter-Bereich ----------
         self.param_frame = QFrame()
@@ -207,7 +199,7 @@ class MainWindow(QWidget):
         param_row = QHBoxLayout()
         param_row.setContentsMargins(EDGE, 0, EDGE, 0)
         param_row.addWidget(self.param_frame)
-        settings_layout.addLayout(param_row)
+        left_layout.addLayout(param_row)
 
         # ---------- Referenzbilder ----------
         # Die erste Karte bündig mit dem linken, die letzte mit dem rechten
@@ -229,7 +221,7 @@ class MainWindow(QWidget):
             self.reference_cards.append(card)
             thumb_row.addWidget(card)
 
-        settings_layout.addLayout(thumb_row)
+        left_layout.addLayout(thumb_row)
 
         # ---------- Schalter ----------
         self.remove_c2pa_checkbox = OptionCheckBox("C2PA-Daten nach Download entfernen")
@@ -252,12 +244,16 @@ class MainWindow(QWidget):
         options_row.addWidget(self.remove_c2pa_checkbox)
         options_row.addWidget(self.auto_retry_checkbox)
         options_row.addStretch(1)
-        settings_layout.addLayout(options_row)
+        left_layout.addLayout(options_row)
 
         # ---------- Generate-Knopf ----------
         self.generate_btn = GenerateAiButton("✨ Generate AI", busy_text=CANCEL_TEXT)
         self.generate_btn.setFont(QFont("", 14, QFont.Weight.Bold))
         left_layout.addWidget(self.generate_btn)
+
+        # Ausgefahren reicht das Prompt-Feld bis an die Oberkante des Knopfes:
+        # die Einstellungen sind zugedeckt, der Knopf bleibt bedienbar.
+        self.prompt.set_expand_stop(self.generate_btn)
 
         # ---------- Bildvorschau ----------
         # Ein Klick öffnet das zuletzt erzeugte Bild im Standardprogramm.
@@ -476,17 +472,17 @@ class MainWindow(QWidget):
     def blink_folder_dropdown(self) -> None:
         """Zeigt, dass der Ordner fehlt: Meldung unten, der Rahmen blinkt rot.
 
-        Steht man gerade auf dem Prompt-Reiter, gleitet erst der Reiter zu den
-        Einstellungen; geblinkt wird, sobald die Ordnerauswahl zu sehen ist.
+        Ist das Prompt-Feld ausgefahren, deckt es die Ordnerauswahl zu. Dann
+        fährt es erst ein; geblinkt wird, sobald die Auswahl zu sehen ist.
         """
         self.status.setText("Bitte zuerst einen Ordner wählen.")
         # Ein Stylesheet wirkt auf das selbstgezeichnete Feld nicht — dafür
         # lässt es seinen Rahmen selbst rot blinken.
-        if self.tabs.currentWidget() is self.settings_page:
+        if not self.prompt.is_expanded():
             self.folder_dropdown.flash()
             return
-        self.tabs.setCurrentWidget(self.settings_page)
-        QTimer.singleShot(self.tabs.SLIDE_MS, self.folder_dropdown.flash)
+        self.prompt.collapse()
+        QTimer.singleShot(self.prompt.GROW_MS, self.folder_dropdown.flash)
 
     # ------------------------------------------------------------------
     # Generierung
@@ -713,7 +709,10 @@ class MainWindow(QWidget):
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
-        # resizeEvent kommt schon während __init__, bevor die Statusanzeige existiert.
+        # resizeEvent kommt schon während __init__, bevor die schwebenden
+        # Widgets existieren.
+        if hasattr(self, "prompt"):
+            self.prompt.sync_geometry()
         if hasattr(self, "status"):
             self.status.sync_geometry()
 
