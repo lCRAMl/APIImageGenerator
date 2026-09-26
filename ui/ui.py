@@ -171,6 +171,7 @@ class MainWindow(QWidget):
         # ---------- Modellauswahl ----------
         model_row = QHBoxLayout()
         self.model_dropdown = Dropdown()
+        self.model_dropdown.setFont(dropdown_font)
         for spec in MODELS:
             self.model_dropdown.addItem(spec.display_name)
         self.model_dropdown.currentTextChanged.connect(self._on_model_changed)
