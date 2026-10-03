@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from qt_controls_pyrs import (
-    HaloCheckBox, HaloDropdown, HaloPromptBox, PulseHaloButton, ReferenceThumb
+    HaloCheckBox, HaloDropdown, HaloImageView, HaloPromptBox, PulseHaloButton, ReferenceThumb
 )
 
 
@@ -79,7 +79,8 @@ class ReferenceCard(ReferenceThumb):
 
     # Dieselbe Farbe wie QPalette.Highlight des Programms — und wie die Anzeige
     # des GenerateAiButton. Zur Laufzeit ginge auch thumb.setGlowColor(...).
-    GLOW_COLOR = "#5a8cff"
+    #GLOW_COLOR = "#5a8cff"
+    GLOW_COLOR = "#ffffff"
 
     # Eckenradius der Karte in Pixeln — 0 ist eckig. Die Decke mit dem X,
     # die sich über ein geladenes Bild legt, folgt derselben Rundung.
@@ -121,6 +122,8 @@ class FolderDropdown(Dropdown):
 
     # Deutsch sortiert: Ä bei A, ohne Groß/Klein, "Ordner 2" vor "Ordner 10".
     SORTED = True
+        # Eckenradius in Pixeln — 0 ist eckig, wie beim GenerateAiButton.
+    RADIUS = 5
 
 
 class PromptBox(HaloPromptBox):
@@ -140,6 +143,21 @@ class PromptBox(HaloPromptBox):
 
     # So lange dauert das Aus- und Einfahren (0 = ohne Bewegung).
     GROW_MS = 300
+
+
+class ImagePreview(HaloImageView):
+    """Die Bildvorschau rechts: zeigt das zuletzt erzeugte Bild.
+
+    Der Rahmen sieht aus wie beim Prompt-Feld und glimmt unter der Maus innen
+    auf. Während der Generierung pulsieren die Gemini-Sterne über dem
+    weichgezeichneten Bild (setBusyIcon im Hauptfenster).
+    """
+
+    # Eckenradius in Pixeln — 0 ist eckig, wie Prompt-Feld und Knöpfe.
+    RADIUS = 0
+
+    # Schriftgröße des Platzhalters "🗋" in Pixeln.
+    PLACEHOLDER_PX = 40
 
 
 class ParamDropdown(Dropdown):

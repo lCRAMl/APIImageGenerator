@@ -21,9 +21,10 @@ core/                    Programmlogik, ohne GUI
   c2pa_cleaner.py        C2PA-Metadaten erkennen und entfernen
 
 ui/                      Qt-Oberfläche
-  ui.py                  Hauptfenster (MainWindow) und Farbschema
+  main_window.ui         Aufbau des Hauptfensters (Qt Designer)
+  ui.py                  Hauptfenster (MainWindow): lädt main_window.ui, Abläufe, Farbschema
   controls.py            Bedienelemente aus qt-controls-pyrs, für dieses Programm eingestellt
-  loading_overlay.py     Animation über der Bildvorschau während der Generierung
+                         (auch die Bildvorschau ImagePreview mit Warte-Animation)
   splash.py              Splash hinter dem ℹ-Knopf (Paket qt_splash)
   workers.py             Hintergrund-Threads für Generierung und Guthaben
 
@@ -79,6 +80,34 @@ Die Bilder landen in `<archive_path>/<gewählter Ordner>/ai/` als
 ```
 python APIImageGenerator.py
 ```
+
+## Fenster im Qt Designer bearbeiten
+
+Layout, Größen, Schriften und feste Texte des Hauptfensters stehen in
+`ui/main_window.ui`. `MainWindow` lädt die Datei bei jedem Start mit `loadUi`;
+eine Änderung im Designer gilt also beim nächsten Start, ohne Umwandlungsschritt.
+
+```
+...\site-packages\PySide6\designer.exe ui\main_window.ui
+```
+
+Der Designer aus PySide6 bearbeitet die Datei; geladen wird sie von PyQt6.
+
+- Die eigenen Widgets (`GenerateAiButton`, `Dropdown`, `FolderDropdown`,
+  `OptionCheckBox`, `ImagePreview`) sind im Designer *promoted widgets* aus
+  `ui.controls`. Er zeigt sie als ihre Qt-Grundform (QPushButton, QComboBox …);
+  wie sie wirklich aussehen, sieht man erst im laufenden Programm.
+  `ImagePreview` ist als schlichtes QWidget eingetragen: Text, Bild und
+  Warte-Symbol setzt `ui.py`.
+- Im Code entstehen weiterhin: das schwebende Prompt-Feld (über `prompt_slot`),
+  die Statuszeile (über `status_slot`) und die sechs Referenzkarten (in der
+  leeren Reihe `thumb_row`), weil sie Angaben brauchen, die der Designer nicht
+  kennt. Ebenso alles, was aus `config.ini` kommt (Haken, Autoretry-Text).
+- Die Ränder 16 links/rechts von `param_row` und `thumb_row` entsprechen
+  `GenerateAiButton.ROOM`.
+- **objectNames nicht umbenennen**, ohne die Liste oben in `MainWindow`
+  anzupassen; `tests/test_ui.py` meldet fehlende oder falsch typisierte
+  Widgets.
 
 ## Tests
 

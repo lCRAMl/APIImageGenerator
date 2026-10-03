@@ -22,6 +22,8 @@ ICON_PATH = "assets/gemini_icon.ico"
 
 ASSET_PATHS = {
     "assets": "assets",
+    # Aufbau des Hauptfensters; ui/ui.py lädt sie zur Laufzeit mit loadUi
+    "ui/main_window.ui": "ui",
 }
 
 # Splash-Video mit Tracking-Datei aus dem SplashScreenPython-Projekt

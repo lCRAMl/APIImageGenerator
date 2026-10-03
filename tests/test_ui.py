@@ -86,3 +86,31 @@ def test_generate_without_folder_does_not_start_worker(window):
 def test_toggling_c2pa_is_saved(window, config):
     window.remove_c2pa_checkbox.setChecked(False)
     assert AppConfig(config.config_path).remove_c2pa_data is False
+
+
+def test_image_preview_shows_placeholder_and_has_busy_icon(window):
+    assert window.image_preview.text() == "🗋"
+    assert not window.image_preview._busy_icon.isNull(), "assets/gemini_symbol.png nicht geladen"
+
+
+def test_aborting_a_run_stops_the_busy_animation(window):
+    window.image_preview.start_busy()
+    window._abort_generation("weg")
+    assert not window.image_preview.is_busy()
+
+
+def test_main_window_ui_provides_every_declared_widget(window):
+    """Jeder objectName, den MainWindow erwartet, kommt aus main_window.ui — mit passender Klasse."""
+    for name, expected_type in MainWindow.__annotations__.items():
+        widget = getattr(window, name, None)
+        assert widget is not None, f"{name} fehlt in ui/main_window.ui"
+        assert isinstance(widget, expected_type), f"{name} ist {type(widget).__name__}"
+
+
+def test_ui_margins_match_generate_button_room(window):
+    """Die Ränder 16 in der .ui stehen für GenerateAiButton.ROOM."""
+    from ui.controls import GenerateAiButton
+
+    for layout in (window.param_row, window.thumb_row):
+        margins = layout.contentsMargins()
+        assert margins.left() == margins.right() == GenerateAiButton.ROOM

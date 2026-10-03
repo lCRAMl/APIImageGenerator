@@ -8,12 +8,14 @@ import os
 import winreg
 from typing import Any
 
+# Direkt aus load_ui: PyQt6.uic reicht loadUi nur intern weiter, was
+# Pylance als "nicht exportiert" anmahnt.
+from PyQt6.uic.load_ui import loadUi
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor, QFont, QIcon, QPalette, QPixmap
+from PyQt6.QtGui import QColor, QIcon, QPalette, QPixmap
 from PyQt6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QFrame,
-    QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QSpinBox,
-    QStyleFactory, QVBoxLayout, QWidget,
+    QHBoxLayout, QLabel, QLineEdit, QSpinBox, QStyleFactory, QWidget,
 )
 from qt_controls_pyrs import StatusBar, flash_taskbar
 from qt_splash import SplashConfig
@@ -24,23 +26,23 @@ from core.kie_api import KieAPI
 from core.models_registry import MODELS, ParamSpec, get_model_by_display_name
 from core.paths import resource_path
 from ui.controls import (
-    Dropdown, FolderDropdown, GenerateAiButton, OptionCheckBox, ParamDropdown,
-    PromptBox, ReferenceCard,
+    Dropdown, FolderDropdown, GenerateAiButton, ImagePreview, OptionCheckBox,
+    ParamDropdown, PromptBox, ReferenceCard,
 )
-from ui.loading_overlay import LoadingOverlayGemini
 from ui.splash import build_splash_config, show_splash
 from ui.workers import CreditsWorker, GenerationWorker
+
+# Aufbau des Fensters, bearbeitbar mit dem Qt Designer.
+# Die Ränder links/rechts von param_row und thumb_row (16) entsprechen
+# GenerateAiButton.ROOM: dem Rand, den Knöpfe, Auswahlfelder und das
+# Prompt-Feld selbst für ihren Schein freihalten. So ragt links wie rechts
+# nichts über den Generate-Knopf hinaus.
+MAIN_WINDOW_UI = "ui/main_window.ui"
 
 # Beschriftung des Generate-Knopfes während eines Durchgangs: erst Cancel;
 # nach einem Klick darauf wird nur noch der laufende Auftrag abgewartet.
 CANCEL_TEXT = "⊗ Cancel"
 FINISHING_TEXT = "Finishing …"
-
-# Abstand von der Kante der linken Spalte bis zum sichtbaren Rahmen des
-# ruhenden Generate-Knopfes. Knöpfe, Auswahlfelder und das Prompt-Feld halten
-# ihn selbst frei (für ihren Schein); alles andere bekommt ihn als Rand im
-# Layout. So ragt links wie rechts nichts über den Knopf hinaus.
-EDGE = GenerateAiButton.ROOM
 
 # Deckkraft des Rahmens um den Parameter-Bereich, 0 bis 255. Die
 # Auswahlfelder stehen bei 0.5, also 128 — der Rahmen hier ist blasser.
@@ -98,6 +100,25 @@ def apply_dark_palette(app: QApplication) -> None:
 # ==========================
 
 class MainWindow(QWidget):
+    # Widgets und Layouts aus main_window.ui. loadUi() legt sie unter ihrem
+    # objectName an; die Liste hier zeigt, was der Code von der .ui erwartet
+    # (und gibt dem Editor die Typen). Wer im Designer einen objectName
+    # ändert, muss ihn auch hier ändern — tests/test_ui.py prüft das.
+    prompt_slot: QWidget             # Platzhalter, darüber schwebt self.prompt
+    folder_row: QHBoxLayout
+    folder_dropdown: FolderDropdown
+    info_btn: GenerateAiButton
+    model_dropdown: Dropdown
+    param_frame: QFrame
+    param_layout: QFormLayout        # Zeilen baut _on_model_changed()
+    thumb_row: QHBoxLayout           # leer; die Referenzkarten kommen im Code dazu
+    remove_c2pa_checkbox: OptionCheckBox
+    auto_retry_checkbox: OptionCheckBox
+    generate_btn: GenerateAiButton
+    image_preview: ImagePreview
+    status_slot: QWidget             # Platzhalter, darüber schwebt self.status
+    credits_label: QLabel
+
     def __init__(self, config: AppConfig, build_info: BuildInfo) -> None:
         super().__init__()
 
@@ -122,114 +143,76 @@ class MainWindow(QWidget):
         self.worker: GenerationWorker | None = None
         self.credits_worker: CreditsWorker | None = None
 
+        # =====================================================
+        # OBERFLÄCHE AUS DER .ui-DATEI
+        # =====================================================
+        # Layout, Größen, Schriften und feste Texte stehen in main_window.ui
+        # (bearbeitbar mit dem Qt Designer). loadUi legt jedes Widget und
+        # Layout unter seinem objectName an: self.generate_btn, self.thumb_row …
+        loadUi(str(resource_path(MAIN_WINDOW_UI)), self)
+
+        # Was nicht in der .ui stehen kann: Werte aus Konfiguration und Build,
+        # Widgets mit eigenen Konstruktor-Argumenten, Signale.
         self.setWindowTitle(build_info.window_title)
-        self.resize(1600, 900)
         self.setWindowIcon(QIcon(str(resource_path("assets/gemini_icon.ico"))))
 
-        # =====================================================
-        # LAYOUTS
-        # =====================================================
-        root_layout  = QHBoxLayout(self)
-        left_layout  = QVBoxLayout()
-        right_layout = QVBoxLayout()
-
         # ---------- Prompt ----------
-        # Im Layout steht nur ein Platzhalter; das Feld selbst schwebt darüber
-        # (wie die Statuszeile). Nur so kann es sich über die Einstellungen
-        # ausfahren, ohne sie zu verschieben.
-        self.prompt_slot = QWidget()
-        self.prompt_slot.setMinimumHeight(180)
-        self.prompt_slot.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
-        left_layout.addWidget(self.prompt_slot, 1)
-
+        # In der .ui steht nur der Platzhalter prompt_slot; das Feld selbst
+        # schwebt darüber (wie die Statuszeile). Nur so kann es sich über die
+        # Einstellungen ausfahren, ohne sie zu verschieben.
         self.prompt = PromptBox(self.prompt_slot, self)
         self.prompt.setPlaceholderText("Prompt eingeben ...")
-        # Wie weit es ausfahren darf, steht erst fest, wenn der Generate-Knopf
-        # gebaut ist: set_expand_stop() weiter unten.
+        # Ausgefahren reicht das Feld bis an die Oberkante des Generate-Knopfes:
+        # die Einstellungen sind zugedeckt, der Knopf bleibt bedienbar.
+        self.prompt.set_expand_stop(self.generate_btn)
 
         # ---------- Ordnerauswahl + Info-Knopf ----------
-        self.folder_dropdown = FolderDropdown()
-        self.folder_dropdown.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        dropdown_font = QFont()
-        dropdown_font.setPointSize(14)
-        self.folder_dropdown.setFont(dropdown_font)
-
-        self.info_btn = GenerateAiButton("ℹ", busy_text="ℹ")
-        self.info_btn.setFixedSize(70, 70)
-        self.info_btn.setFont(QFont("", 14, QFont.Weight.Bold))
-        self.info_btn.setToolTip("Info / About")
+        self.info_btn.setBusyText("ℹ")
         self.info_btn.clicked.connect(self._show_splash)
 
-        folder_row = QHBoxLayout()
-        folder_row.setSpacing(6)
-        folder_row.addWidget(self.folder_dropdown)
-        folder_row.addWidget(self.info_btn)
-        left_layout.addLayout(folder_row)
-
         # ---------- Modellauswahl ----------
-        model_row = QHBoxLayout()
-        self.model_dropdown = Dropdown()
-        self.model_dropdown.setFont(dropdown_font)
         for spec in MODELS:
             self.model_dropdown.addItem(spec.display_name)
         self.model_dropdown.currentTextChanged.connect(self._on_model_changed)
-        model_row.addWidget(self.model_dropdown, 1)
-        left_layout.addLayout(model_row)
 
         # ---------- Dynamischer Parameter-Bereich ----------
-        self.param_frame = QFrame()
-        # Rahmen ohne eigenes Widget: Qt zeichnet ihn nach dem Stylesheet.
-        # Oben offen (border-top: none), damit der Bereich unter dem Modellfeld
-        # beginnt, und blasser als die Rahmen der Auswahlfelder (dort 0.5 von
-        # Weiß). Der Selektor mit # trifft nur diesen Rahmen, nicht die Felder
-        # darin — sonst bekäme jede Beschriftung einen eigenen Rahmen.
+        # Rahmen nach Stylesheet, in der Textfarbe des Farbschemas: oben offen
+        # (border-top: none), damit der Bereich unter dem Modellfeld beginnt,
+        # und blasser als die Rahmen der Auswahlfelder. Der Selektor mit #
+        # trifft nur diesen Rahmen, nicht die Felder darin.
         ink = self.palette().color(QPalette.ColorRole.ButtonText)
-        self.param_frame.setFrameShape(QFrame.Shape.NoFrame)
-        self.param_frame.setObjectName("param_frame")
         self.param_frame.setStyleSheet(
             f"#param_frame {{ border: 1px solid "
             f"rgba({ink.red()}, {ink.green()}, {ink.blue()}, {PARAM_FRAME_ALPHA}); "
             f"border-top: none; }}"
         )
-        self.param_layout = QFormLayout(self.param_frame)
-        self.param_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
-        self.param_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        self.param_layout.setSpacing(6)
-        param_row = QHBoxLayout()
-        param_row.setContentsMargins(EDGE, 0, EDGE, 0)
-        param_row.addWidget(self.param_frame)
-        left_layout.addLayout(param_row)
+        # Die Zeilen von param_layout baut _on_model_changed() je Modell auf.
 
         # ---------- Referenzbilder ----------
-        # Die erste Karte bündig mit dem linken, die letzte mit dem rechten
-        # Rand des Generate-Knopfes; dazwischen gleich große Abstände.
-        thumb_row = QHBoxLayout()
-        thumb_row.setContentsMargins(EDGE, 0, EDGE, 0)
+        # Die Karten brauchen Index und ImgBB-Key, deshalb entstehen sie hier,
+        # in der leeren Reihe thumb_row. Die erste Karte bündig mit dem linken,
+        # die letzte mit dem rechten Rand des Generate-Knopfes; dazwischen
+        # gleich große Abstände.
         self.reference_cards: list[ReferenceCard] = []
         # ImgBB-URL je Miniatur; None, solange dort kein Bild hochgeladen ist
         self.reference_urls: list[str | None] = [None] * REFERENCE_SLOTS
 
         for index in range(REFERENCE_SLOTS):
             if index > 0:
-                thumb_row.addStretch(1)
+                self.thumb_row.addStretch(1)
             # Der Dateidialog geht gleich im Archivordner auf.
             card = ReferenceCard(index, self.imgbb_api_key, start_dir=str(self.archive_dir))
             card.cleared.connect(self._on_reference_cleared)
             card.uploaded.connect(self._on_reference_uploaded)
             card.upload_failed.connect(self._on_reference_upload_failed)
             self.reference_cards.append(card)
-            thumb_row.addWidget(card)
-
-        left_layout.addLayout(thumb_row)
+            self.thumb_row.addWidget(card)
 
         # ---------- Schalter ----------
-        self.remove_c2pa_checkbox = OptionCheckBox("C2PA-Daten nach Download entfernen")
         self.remove_c2pa_checkbox.setChecked(config.remove_c2pa_data)
         self.remove_c2pa_checkbox.toggled.connect(self._on_remove_c2pa_toggled)
         # In Klammern steht, wie oft höchstens wiederholt wird (max_retries).
-        self.auto_retry_checkbox = OptionCheckBox(f"Autoretry ({config.max_retries})")
+        self.auto_retry_checkbox.setText(f"Autoretry ({config.max_retries})")
         self.auto_retry_checkbox.setChecked(config.auto_retry)
         self.auto_retry_checkbox.setToolTip(
             f"Wiederholt die Generierung nach einem Fehler bis zu {config.max_retries}-mal "
@@ -238,57 +221,19 @@ class MainWindow(QWidget):
         )
         self.auto_retry_checkbox.toggled.connect(self._on_auto_retry_toggled)
 
-        # Mittig über dem Generate-Knopf: links und rechts gleich viel Platz.
-        options_row = QHBoxLayout()
-        options_row.setSpacing(20)
-        options_row.addStretch(1)
-        options_row.addWidget(self.remove_c2pa_checkbox)
-        options_row.addWidget(self.auto_retry_checkbox)
-        options_row.addStretch(1)
-        left_layout.addLayout(options_row)
-
         # ---------- Generate-Knopf ----------
-        self.generate_btn = GenerateAiButton("✨ Generate AI", busy_text=CANCEL_TEXT)
-        self.generate_btn.setFont(QFont("", 14, QFont.Weight.Bold))
-        left_layout.addWidget(self.generate_btn)
-
-        # Ausgefahren reicht das Prompt-Feld bis an die Oberkante des Knopfes:
-        # die Einstellungen sind zugedeckt, der Knopf bleibt bedienbar.
-        self.prompt.set_expand_stop(self.generate_btn)
+        self.generate_btn.setBusyText(CANCEL_TEXT)
 
         # ---------- Bildvorschau ----------
         # Ein Klick öffnet das zuletzt erzeugte Bild im Standardprogramm.
-        self.image_label = QLabel("🗋")
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setFixedSize(900, 900)
-        self.image_label.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.image_label.setStyleSheet("border:1px solid #333; font-size:40px;")
-        self.image_label.mousePressEvent = self._on_image_clicked
-        right_layout.addWidget(self.image_label)
+        # Während der Generierung pulsieren darüber die Gemini-Sterne.
+        self.image_preview.setText("🗋")
+        self.image_preview.setBusyIcon(QPixmap(str(resource_path("assets/gemini_symbol.png"))))
+        self.image_preview.clicked.connect(self._on_image_clicked)
 
         # ---------- Statuszeile ----------
-        status_row = QHBoxLayout()
-        self.status_slot = QWidget()
-        self.status_slot.setFixedHeight(20)
-        self.status_slot.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        self.credits_label = QLabel("💰 --")
-        self.credits_label.setFixedHeight(20)
-        self.credits_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self.credits_label.setStyleSheet("color:#8fd18f; font-size:11px;")
-
-        status_row.addWidget(self.status_slot)
-        status_row.addWidget(self.credits_label)
-        right_layout.addLayout(status_row)
-
-        # =====================================================
-        # FINAL LAYOUT
-        # =====================================================
-        root_layout.addLayout(left_layout, 1)
-        root_layout.addLayout(right_layout, 1)
-
-        # Statusanzeige schwebt über dem Platzhalter und klappt bei langen
-        # Meldungen nach oben auf, statt das Fenster zu vergrößern.
+        # Statusanzeige schwebt über dem Platzhalter status_slot und klappt bei
+        # langen Meldungen nach oben auf, statt das Fenster zu vergrößern.
         self.status = StatusBar(self.status_slot, self)
         self.status.setText("Idle")
 
@@ -307,8 +252,6 @@ class MainWindow(QWidget):
         self._retry_timer = QTimer(self)
         self._retry_timer.setSingleShot(True)
         self._retry_timer.timeout.connect(self._run_generation)
-
-        self.loading_overlay = LoadingOverlayGemini(self.image_label, "assets/gemini_symbol.png")
 
         # Parameter-Bereich für das vorausgewählte Modell aufbauen
         self._on_model_changed(self.model_dropdown.currentText())
@@ -570,8 +513,7 @@ class MainWindow(QWidget):
         self.worker.succeeded.connect(self._on_generation_succeeded)
         self.worker.failed.connect(self._on_generation_failed)
 
-        self.image_label.setText("")
-        self.loading_overlay.start()
+        self.image_preview.start_busy()
         self.worker.start()
 
     def _on_worker_status(self, text: str) -> None:
@@ -582,17 +524,13 @@ class MainWindow(QWidget):
         self.status.setText(text)
 
     def _on_generation_succeeded(self, image_path: str) -> None:
-        self.loading_overlay.stop()
+        self.image_preview.stop_busy()
         self._reset_generate_btn()
         flash_taskbar(int(self.winId()))
         self.last_image_path = image_path
 
-        pixmap = QPixmap(image_path).scaled(
-            self.image_label.size(),
-            Qt.AspectRatioMode.KeepAspectRatio,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        self.image_label.setPixmap(pixmap)
+        # Die Vorschau passt das Bild selbst in ihren Rahmen ein.
+        self.image_preview.setPixmap(QPixmap(image_path))
         self.status.setText("Fertig")
         self.refresh_credits_async()
 
@@ -627,7 +565,7 @@ class MainWindow(QWidget):
     def _abort_generation(self, message: str = "") -> None:
         """Beendet den Durchgang inkl. einer wartenden Wiederholung."""
         self._retry_timer.stop()
-        self.loading_overlay.stop()
+        self.image_preview.stop_busy()
         self._reset_generate_btn()
         if message:
             self.status.setText(message)
@@ -699,7 +637,7 @@ class MainWindow(QWidget):
     # Sonstiges
     # ------------------------------------------------------------------
 
-    def _on_image_clicked(self, event) -> None:
+    def _on_image_clicked(self) -> None:
         """Öffnet das zuletzt erzeugte Bild im Standardprogramm von Windows."""
         if not self.last_image_path or not os.path.exists(self.last_image_path):
             return
