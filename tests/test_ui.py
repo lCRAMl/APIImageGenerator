@@ -114,3 +114,16 @@ def test_ui_margins_match_generate_button_room(window):
     for layout in (window.param_row, window.thumb_row):
         margins = layout.contentsMargins()
         assert margins.left() == margins.right() == GenerateAiButton.ROOM
+
+
+def test_prompt_and_preview_frames_share_top_line(window):
+    """Die Rahmen von Prompt-Feld und Bildvorschau liegen oben auf einer Höhe."""
+    from PyQt6.QtCore import QPoint
+
+    window.resize(1600, 900)
+    window.show()
+    window.prompt.sync_geometry()
+    prompt_frame_top = window.prompt.geometry().top() + window.prompt.ROOM_Y
+    preview = window.image_preview
+    preview_frame_top = preview.mapTo(window, QPoint(0, 0)).y() + preview.ROOM_Y
+    assert prompt_frame_top == preview_frame_top

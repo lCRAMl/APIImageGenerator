@@ -123,7 +123,7 @@ class FolderDropdown(Dropdown):
     # Deutsch sortiert: Ä bei A, ohne Groß/Klein, "Ordner 2" vor "Ordner 10".
     SORTED = True
         # Eckenradius in Pixeln — 0 ist eckig, wie beim GenerateAiButton.
-    RADIUS = 5
+    RADIUS = 0
 
 
 class PromptBox(HaloPromptBox):
@@ -136,7 +136,7 @@ class PromptBox(HaloPromptBox):
 
     # Der Rahmen steht genau über dem des GenerateAiButton: derselbe Rand,
     # den die Halo-Knöpfe links und rechts für ihren Schein freihalten.
-    ROOM = GenerateAiButton.ROOM
+    ROOM = 0
 
     # Eckenradius in Pixeln — 0 ist eckig, wie Knopf und Auswahlfelder.
     RADIUS = 0
@@ -155,6 +155,12 @@ class ImagePreview(HaloImageView):
 
     # Eckenradius in Pixeln — 0 ist eckig, wie Prompt-Feld und Knöpfe.
     RADIUS = 0
+
+    # Rand oben und unten zwischen Widget-Kante und Rahmen — derselbe wie beim
+    # Prompt-Feld. Beide Widgets beginnen auf gleicher Höhe; nur mit gleichem
+    # Rand liegen auch ihre Rahmen oben auf einer Linie.
+    ROOM_Y = PromptBox.ROOM_Y
+    #ROOM = PromptBox.ROOM
 
     # Schriftgröße des Platzhalters "🗋" in Pixeln.
     PLACEHOLDER_PX = 40
