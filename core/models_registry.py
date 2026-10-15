@@ -64,15 +64,23 @@ SEED_MAX = 2_147_483_647
 
 MODELS: list[ModelSpec] = [
 
-    # ----- Grok Imagine - Image to Image -----
+    # ----- Google - Nano Banana 2.1 -----
     ModelSpec(
-        display_name="Grok Imagine - Image to Image",
-        api_model="grok-imagine/image-to-image",
-        images_field="image_urls",
+        display_name="Google - Nano Banana 2.1",
+        api_model="nano-banana-2-1",
+        images_field="image_input",
         images_is_list=True,
-        max_images=5,
+        max_images=14,
         params=[
-            ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["1:1", "2:3", "3:2", "1:4", "4:1",
+                               "3:4", "4:3", "4:5", "5:4",
+                               "8:1", "1:8", "9:16", "16:9", "auto"],
+                      default="3:4"),
+            ParamSpec("resolution", "Resolution", "enum",
+                      options=["1K", "2K", "4K"], default="2K"),
+            ParamSpec("output_format", "Output Format", "enum",
+                      options=["png", "jpg"], default="png"),
         ],
     ),
 
@@ -88,9 +96,9 @@ MODELS: list[ModelSpec] = [
                       options=["1:1", "1:4", "1:8", "2:3", "3:2",
                                "3:4", "4:1", "4:3", "4:5", "5:4",
                                "8:1", "9:16", "16:9", "21:9", "auto"],
-                      default="auto"),
+                      default="3:4"),
             ParamSpec("resolution", "Resolution", "enum",
-                      options=["1K", "2K", "4K"], default="4K"),
+                      options=["1K", "2K", "4K"], default="2K"),
             ParamSpec("output_format", "Output Format", "enum",
                       options=["png", "jpg"], default="png"),
         ],
@@ -107,31 +115,25 @@ MODELS: list[ModelSpec] = [
             ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
                       options=["1:1", "2:3", "3:2", "3:4", "4:3",
                                "4:5", "5:4", "9:16", "16:9", "21:9", "auto"],
-                      default="1:1"),
+                      default="3:4"),
             ParamSpec("resolution", "Resolution", "enum",
-                      options=["1K", "2K", "4K"], default="1K"),
+                      options=["1K", "2K", "4K"], default="2K"),
             ParamSpec("output_format", "Output Format", "enum",
                       options=["png", "jpg"], default="png"),
         ],
     ),
-
-    # ----- Google - Nano Banana Edit -----
+    # ----- Grok Imagine - Image to Image -----
     ModelSpec(
-        display_name="Google - Nano Banana Edit",
-        api_model="google/nano-banana-edit",
+        display_name="Grok Imagine - Image to Image",
+        api_model="grok-imagine/image-to-image",
         images_field="image_urls",
         images_is_list=True,
-        max_images=10,
+        max_images=5,
         params=[
-            ParamSpec("output_format", "Output Format", "enum",
-                      options=["png", "jpeg"], default="png"),
-            ParamSpec("image_size", "Image Size", "enum",
-                      options=["1:1", "9:16", "16:9", "3:4", "4:3",
-                               "3:2", "2:3", "5:4", "4:5", "21:9", "auto"],
-                      default="1:1"),
+            ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
         ],
     ),
-
+    
     # ----- GPT Image 2 - Image to Image -----
     ModelSpec(
         display_name="GPT Image-2 - Image to Image",
