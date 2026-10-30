@@ -624,8 +624,8 @@ class MainWindow(QWidget):
 
     def _on_reference_upload_failed(self, index: int, error: str) -> None:
         # error ist mehrzeilig: erste Zeile die Ursache, darunter Datei, Ziel,
-        # Zeitlimit, Dauer, technische Ausnahme und ein Hinweis. Die
-        # Statuszeile klappt dafür auf; ein Klick darauf öffnet sie erneut.
+        # Zeitlimit, Dauer und technische Ausnahme. Die Statuszeile klappt
+        # dafür auf; ein Klick darauf öffnet sie erneut.
         self.status.setText(f"Upload Referenzbild {index + 1} fehlgeschlagen: {error}")
 
     # ------------------------------------------------------------------
