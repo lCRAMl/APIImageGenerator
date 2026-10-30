@@ -21,6 +21,7 @@ class AppConfig:
     SECTION_URLS = "URLs"
     SECTION_OPTIONS = "Options"
     SECTION_DOWNLOAD = "Download"
+    SECTION_UPLOAD = "Upload"
     SECTION_SPLASH = "Splash"
 
     # ==============================
@@ -35,6 +36,9 @@ class AppConfig:
     DEFAULT_MAX_RETRIES: int = 3
     DEFAULT_DOWNLOAD_ATTEMPTS: int = 3
     DEFAULT_DOWNLOAD_TIMEOUT_S: int = 60
+    # Zeitlimit beim Hochladen der Referenzbilder zu ImgBB, je Netzwerkschritt
+    # (Verbinden, Senden, Antwort abwarten). Bei großen Bildern erhöhen.
+    DEFAULT_UPLOAD_TIMEOUT_S: int = 30
 
     # Text im Splash (ℹ-Knopf). Leere Schriftart = Standardschrift des Systems.
     # Farben als "#rrggbb" oder Qt-Farbname ("white", "black" ...).
@@ -49,6 +53,8 @@ class AppConfig:
     DEFAULT_STATUS_URL:   str = "https://api.kie.ai/api/v1/jobs/recordInfo"
     DEFAULT_CREDITS_URL:  str = "https://api.kie.ai/api/v1/chat/credit"
     DEFAULT_CALLBACK_URL: str = "https://example.com/callback"
+    # Hierhin laden die Referenzbild-Miniaturen ihre Bilder hoch.
+    DEFAULT_IMGBB_UPLOAD_URL: str = "https://api.imgbb.com/1/upload"
 
     def __init__(self, config_path: Path | None = None) -> None:
         """Lädt die config.ini; ohne config_path die des Programms (siehe paths.py)."""
@@ -64,6 +70,7 @@ class AppConfig:
         self.status_url:   str = self.DEFAULT_STATUS_URL
         self.credits_url:  str = self.DEFAULT_CREDITS_URL
         self.callback_url: str = self.DEFAULT_CALLBACK_URL
+        self.imgbb_upload_url: str = self.DEFAULT_IMGBB_UPLOAD_URL
 
         self.remove_c2pa_data: bool = self.DEFAULT_REMOVE_C2PA_DATA
         self.auto_retry: bool = self.DEFAULT_AUTO_RETRY
@@ -72,6 +79,8 @@ class AppConfig:
 
         self.download_attempts: int = self.DEFAULT_DOWNLOAD_ATTEMPTS
         self.download_timeout_s: int = self.DEFAULT_DOWNLOAD_TIMEOUT_S
+
+        self.upload_timeout_s: int = self.DEFAULT_UPLOAD_TIMEOUT_S
 
         self.splash_font_family: str = self.DEFAULT_SPLASH_FONT_FAMILY
         self.splash_font_size_pt: int = self.DEFAULT_SPLASH_FONT_SIZE_PT
@@ -108,6 +117,7 @@ class AppConfig:
             "status_url":   self.status_url,
             "credits_url":  self.credits_url,
             "callback_url": self.callback_url,
+            "imgbb_upload_url": self.imgbb_upload_url,
         }
         self.config[self.SECTION_OPTIONS] = {
             "remove_c2pa_data": str(self.remove_c2pa_data),
@@ -118,6 +128,9 @@ class AppConfig:
         self.config[self.SECTION_DOWNLOAD] = {
             "download_attempts":  str(self.download_attempts),
             "download_timeout_s": str(self.download_timeout_s),
+        }
+        self.config[self.SECTION_UPLOAD] = {
+            "upload_timeout_s": str(self.upload_timeout_s),
         }
         self.config[self.SECTION_SPLASH] = {
             "font_family":   self.splash_font_family,
@@ -167,6 +180,7 @@ class AppConfig:
         self._parse_urls()
         self._parse_options()
         self._parse_download()
+        self._parse_upload()
         self._parse_splash()
 
         # Fehlende Einträge (z.B. Config aus älterer Version) mit den Defaults
@@ -178,6 +192,8 @@ class AppConfig:
             (self.SECTION_OPTIONS,  "max_retries"),
             (self.SECTION_DOWNLOAD, "download_attempts"),
             (self.SECTION_DOWNLOAD, "download_timeout_s"),
+            (self.SECTION_URLS,     "imgbb_upload_url"),
+            (self.SECTION_UPLOAD,   "upload_timeout_s"),
             (self.SECTION_SPLASH,   "font_family"),
             (self.SECTION_SPLASH,   "font_size_pt"),
             (self.SECTION_SPLASH,   "text_color"),
@@ -224,6 +240,10 @@ class AppConfig:
         self.callback_url = self.config.get(
             self.SECTION_URLS, "callback_url", fallback=self.DEFAULT_CALLBACK_URL
         )
+        # Leer gelassen wäre kein Upload möglich — dann die ImgBB-Adresse.
+        self.imgbb_upload_url = self.config.get(
+            self.SECTION_URLS, "imgbb_upload_url", fallback=self.DEFAULT_IMGBB_UPLOAD_URL
+        ).strip() or self.DEFAULT_IMGBB_UPLOAD_URL
 
     def _parse_options(self) -> None:
         self.remove_c2pa_data = self._get_bool(
@@ -246,6 +266,11 @@ class AppConfig:
         )
         self.download_timeout_s = self._get_positive_int(
             self.SECTION_DOWNLOAD, "download_timeout_s", self.DEFAULT_DOWNLOAD_TIMEOUT_S
+        )
+
+    def _parse_upload(self) -> None:
+        self.upload_timeout_s = self._get_positive_int(
+            self.SECTION_UPLOAD, "upload_timeout_s", self.DEFAULT_UPLOAD_TIMEOUT_S
         )
 
     def _parse_splash(self) -> None:

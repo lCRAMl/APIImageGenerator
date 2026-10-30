@@ -200,8 +200,15 @@ class MainWindow(QWidget):
         for index in range(REFERENCE_SLOTS):
             if index > 0:
                 self.thumb_row.addStretch(1)
-            # Der Dateidialog geht gleich im Archivordner auf.
-            card = ReferenceCard(index, self.imgbb_api_key, start_dir=str(self.archive_dir))
+            # Der Dateidialog geht gleich im Archivordner auf. Wohin und mit
+            # welchem Zeitlimit hochgeladen wird, steht in der config.ini.
+            card = ReferenceCard(
+                index,
+                self.imgbb_api_key,
+                start_dir=str(self.archive_dir),
+                upload_endpoint=config.imgbb_upload_url,
+                upload_timeout_s=config.upload_timeout_s,
+            )
             card.cleared.connect(self._on_reference_cleared)
             card.uploaded.connect(self._on_reference_uploaded)
             card.upload_failed.connect(self._on_reference_upload_failed)
@@ -616,6 +623,9 @@ class MainWindow(QWidget):
         self.reference_urls[index] = url
 
     def _on_reference_upload_failed(self, index: int, error: str) -> None:
+        # error ist mehrzeilig: erste Zeile die Ursache, darunter Datei, Ziel,
+        # Zeitlimit, Dauer, technische Ausnahme und ein Hinweis. Die
+        # Statuszeile klappt dafür auf; ein Klick darauf öffnet sie erneut.
         self.status.setText(f"Upload Referenzbild {index + 1} fehlgeschlagen: {error}")
 
     # ------------------------------------------------------------------

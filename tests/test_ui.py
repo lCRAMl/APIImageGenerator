@@ -127,3 +127,24 @@ def test_prompt_and_preview_frames_share_top_line(window):
     preview = window.image_preview
     preview_frame_top = preview.mapTo(window, QPoint(0, 0)).y() + preview.ROOM_Y
     assert prompt_frame_top == preview_frame_top
+
+
+def test_reference_cards_get_upload_settings_from_config(qtbot, tmp_path):
+    path = tmp_path / "config.ini"
+    path.write_text(
+        f"[Paths]\narchive_path = {tmp_path}\n"
+        "[URLs]\nimgbb_upload_url = https://example.org/upload\ncredits_url = http://127.0.0.1:9/credit\n"
+        "[Upload]\nupload_timeout_s = 120\n",
+        encoding="utf-8",
+    )
+    main_window = MainWindow(AppConfig(path), BUILD_INFO)
+    qtbot.addWidget(main_window)
+    for card in main_window.reference_cards:
+        assert card._upload_endpoint == "https://example.org/upload"
+        assert card._upload_timeout_s == 120
+
+
+def test_upload_error_is_shown_in_full(window):
+    error = "Upload-Timeout: der Server hat nicht innerhalb von 30 s geantwortet.\nDatei: a.png (2.0 MB)"
+    window._on_reference_upload_failed(2, error)
+    assert window.status.text() == f"Upload Referenzbild 3 fehlgeschlagen: {error}"

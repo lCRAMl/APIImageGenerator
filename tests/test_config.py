@@ -78,3 +78,24 @@ def test_splash_defaults_are_written(tmp_path):
     text = path.read_text(encoding="utf-8")
     assert "[Splash]" in text
     assert "font_size_pt = 20" in text
+
+
+def test_upload_settings(tmp_path):
+    path = tmp_path / "config.ini"
+    path.write_text(
+        "[URLs]\nimgbb_upload_url = https://example.org/upload\n[Upload]\nupload_timeout_s = 120\n",
+        encoding="utf-8",
+    )
+    config = AppConfig(path)
+    assert config.imgbb_upload_url == "https://example.org/upload"
+    assert config.upload_timeout_s == 120
+
+
+def test_upload_defaults_are_written_and_empty_url_falls_back(tmp_path):
+    path = tmp_path / "config.ini"
+    path.write_text("[URLs]\nimgbb_upload_url =\n", encoding="utf-8")
+    config = AppConfig(path)
+    assert config.imgbb_upload_url == "https://api.imgbb.com/1/upload"
+    assert config.upload_timeout_s == 30
+    text = path.read_text(encoding="utf-8")
+    assert "[Upload]" in text and "upload_timeout_s = 30" in text

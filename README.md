@@ -68,8 +68,10 @@ Repository.
 | `[Paths]`    | `archive_path`                                         | Archivordner; seine Unterordner stehen zur Auswahl   |
 | `[API]`      | `nanobanana_api_key`, `imgbb_api_key`                  | Keys für kie.ai und ImgBB                            |
 | `[URLs]`     | `generate_url`, `status_url`, `credits_url`, `callback_url` | Endpunkte der API                               |
+|              | `imgbb_upload_url`                                     | Wohin die Referenzbilder hochgeladen werden (ImgBB)  |
 | `[Options]`  | `remove_c2pa_data`, `auto_retry`, `retry_delay_s`, `max_retries` | Schalter und Autoretry                     |
 | `[Download]` | `download_attempts`, `download_timeout_s`              | Versuche und Zeitlimit je Download                   |
+| `[Upload]`   | `upload_timeout_s`                                     | Zeitlimit je Netzwerkschritt beim Hochladen der Referenzbilder (Standard 30 s) |
 | `[Splash]`   | `font_family`, `font_size_pt`, `text_color`, `outline_color` | Schrift im Splash; leere Schriftart = Systemschrift, Farben als `#rrggbb` |
 
 Die Bilder landen in `<archive_path>/<gewählter Ordner>/ai/` als
