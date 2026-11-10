@@ -200,8 +200,10 @@ class MainWindow(QWidget):
         for index in range(REFERENCE_SLOTS):
             if index > 0:
                 self.thumb_row.addStretch(1)
-            # Der Dateidialog geht gleich im Archivordner auf. Wohin und mit
-            # welchem Zeitlimit hochgeladen wird, steht in der config.ini.
+            # Der Dateidialog geht beim ersten Mal im Archivordner auf, danach
+            # im Ordner des zuletzt gewählten Bildes (_on_reference_selected).
+            # Wohin und mit welchem Zeitlimit hochgeladen wird, steht in der
+            # config.ini.
             card = ReferenceCard(
                 index,
                 self.imgbb_api_key,
@@ -210,6 +212,7 @@ class MainWindow(QWidget):
                 upload_timeout_s=config.upload_timeout_s,
             )
             card.cleared.connect(self._on_reference_cleared)
+            card.image_selected.connect(self._on_reference_selected)
             card.uploaded.connect(self._on_reference_uploaded)
             card.upload_failed.connect(self._on_reference_upload_failed)
             self.reference_cards.append(card)
@@ -618,6 +621,16 @@ class MainWindow(QWidget):
 
     def _on_reference_cleared(self, index: int) -> None:
         self.reference_urls[index] = None
+
+    def _on_reference_selected(self, index: int, path: str) -> None:
+        """Alle Miniaturen öffnen den Dialog künftig im Ordner dieses Bildes.
+
+        Gilt nur bis zum Beenden; nach dem nächsten Start beginnt der Dialog
+        wieder im Archivordner aus der config.ini.
+        """
+        folder = os.path.dirname(path)
+        for card in self.reference_cards:
+            card.setStartDir(folder)
 
     def _on_reference_uploaded(self, index: int, url: str) -> None:
         self.reference_urls[index] = url

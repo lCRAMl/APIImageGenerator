@@ -103,41 +103,8 @@ class AppConfig:
         if self.config.has_section("Prompt"):
             self.config.remove_section("Prompt")
 
-        self.config[self.SECTION_PATHS] = {
-            "archive_path": str(self.archive_path),
-        }
-        self.config[self.SECTION_API] = {
-            # Hinweis: Keys werden im Klartext gespeichert.
-            # Für produktive Umgebungen keyring oder eine verschlüsselte Lösung verwenden.
-            "nanobanana_api_key": self.nanobanana_api_key,
-            "imgbb_api_key":      self.imgbb_api_key,
-        }
-        self.config[self.SECTION_URLS] = {
-            "generate_url": self.generate_url,
-            "status_url":   self.status_url,
-            "credits_url":  self.credits_url,
-            "callback_url": self.callback_url,
-            "imgbb_upload_url": self.imgbb_upload_url,
-        }
-        self.config[self.SECTION_OPTIONS] = {
-            "remove_c2pa_data": str(self.remove_c2pa_data),
-            "auto_retry":       str(self.auto_retry),
-            "retry_delay_s":    str(self.retry_delay_s),
-            "max_retries":      str(self.max_retries),
-        }
-        self.config[self.SECTION_DOWNLOAD] = {
-            "download_attempts":  str(self.download_attempts),
-            "download_timeout_s": str(self.download_timeout_s),
-        }
-        self.config[self.SECTION_UPLOAD] = {
-            "upload_timeout_s": str(self.upload_timeout_s),
-        }
-        self.config[self.SECTION_SPLASH] = {
-            "font_family":   self.splash_font_family,
-            "font_size_pt":  str(self.splash_font_size_pt),
-            "text_color":    self.splash_text_color,
-            "outline_color": self.splash_outline_color,
-        }
+        for section, entries in self._sections().items():
+            self.config[section] = entries
 
         try:
             with open(self.config_path, "w", encoding="utf-8") as f:
@@ -147,6 +114,50 @@ class AppConfig:
             raise ConfigError(
                 f"Konfiguration konnte nicht gespeichert werden: {self.config_path}"
             ) from exc
+
+    def _sections(self) -> dict[str, dict[str, str]]:
+        """Alle Einträge der config.ini mit ihren aktuellen Werten, je Abschnitt.
+
+        Die einzige Liste der Einträge: save() schreibt genau diese, und beim
+        Laden wird ergänzt, was davon in der Datei fehlt.
+        """
+        return {
+            self.SECTION_PATHS: {
+                "archive_path": str(self.archive_path),
+            },
+            self.SECTION_API: {
+                # Hinweis: Keys werden im Klartext gespeichert.
+                # Für produktive Umgebungen keyring oder eine verschlüsselte Lösung verwenden.
+                "nanobanana_api_key": self.nanobanana_api_key,
+                "imgbb_api_key":      self.imgbb_api_key,
+            },
+            self.SECTION_URLS: {
+                "generate_url":     self.generate_url,
+                "status_url":       self.status_url,
+                "credits_url":      self.credits_url,
+                "callback_url":     self.callback_url,
+                "imgbb_upload_url": self.imgbb_upload_url,
+            },
+            self.SECTION_OPTIONS: {
+                "remove_c2pa_data": str(self.remove_c2pa_data),
+                "auto_retry":       str(self.auto_retry),
+                "retry_delay_s":    str(self.retry_delay_s),
+                "max_retries":      str(self.max_retries),
+            },
+            self.SECTION_DOWNLOAD: {
+                "download_attempts":  str(self.download_attempts),
+                "download_timeout_s": str(self.download_timeout_s),
+            },
+            self.SECTION_UPLOAD: {
+                "upload_timeout_s": str(self.upload_timeout_s),
+            },
+            self.SECTION_SPLASH: {
+                "font_family":   self.splash_font_family,
+                "font_size_pt":  str(self.splash_font_size_pt),
+                "text_color":    self.splash_text_color,
+                "outline_color": self.splash_outline_color,
+            },
+        }
 
     def __repr__(self) -> str:
         return (
@@ -183,24 +194,18 @@ class AppConfig:
         self._parse_upload()
         self._parse_splash()
 
-        # Fehlende Einträge (z.B. Config aus älterer Version) mit den Defaults
-        # in die Datei schreiben, damit sie dort anpassbar sind.
-        expected = (
-            (self.SECTION_OPTIONS,  "remove_c2pa_data"),
-            (self.SECTION_OPTIONS,  "auto_retry"),
-            (self.SECTION_OPTIONS,  "retry_delay_s"),
-            (self.SECTION_OPTIONS,  "max_retries"),
-            (self.SECTION_DOWNLOAD, "download_attempts"),
-            (self.SECTION_DOWNLOAD, "download_timeout_s"),
-            (self.SECTION_URLS,     "imgbb_upload_url"),
-            (self.SECTION_UPLOAD,   "upload_timeout_s"),
-            (self.SECTION_SPLASH,   "font_family"),
-            (self.SECTION_SPLASH,   "font_size_pt"),
-            (self.SECTION_SPLASH,   "text_color"),
-            (self.SECTION_SPLASH,   "outline_color"),
-        )
-        if not all(self.config.has_option(section, key) for section, key in expected):
-            logger.info("Einträge fehlen in der Config – Defaults werden eingetragen.")
+        # Fehlende Einträge (z.B. Config aus älterer Version oder von Hand
+        # gelöscht) mit den Defaults in die Datei schreiben, damit sie dort
+        # anpassbar sind. Was in der Datei steht, bleibt unverändert.
+        missing = [
+            f"[{section}] {key}"
+            for section, entries in self._sections().items()
+            for key in entries
+            if not self.config.has_option(section, key)
+        ]
+        if missing:
+            logger.info("Einträge fehlen in der Config – Defaults werden eingetragen: %s",
+                        ", ".join(missing))
             try:
                 self.save()
             except ConfigError as exc:

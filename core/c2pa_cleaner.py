@@ -1,7 +1,7 @@
 # c2pa_cleaner.py
 #
 # Erkennt und entfernt C2PA-Metadaten (Herkunftsnachweis, "Content
-# Credentials") aus heruntergeladenen JPEG- und PNG-Bildern.
+# Credentials") aus heruntergeladenen JPEG-, PNG- und WebP-Bildern.
 
 import logging
 from pathlib import Path
@@ -43,7 +43,8 @@ def remove_c2pa_data(media_path: str | Path) -> bool:
     - das Ergebnis ist bit-identisch zu einer Datei, die nie C2PA-Daten
     enthalten hat. Alle übrigen Bilddaten und Metadaten bleiben unverändert.
 
-    Unterstützt JPEG (APP11/JUMBF-Segmente) und PNG (caBX-Chunk).
+    Unterstützt JPEG (APP11/JUMBF-Segmente), PNG (caBX-Chunk) und WebP
+    (C2PA-Chunk im RIFF-Container).
 
     Returns:
         True, wenn C2PA-Daten gefunden und entfernt wurden.
@@ -51,7 +52,7 @@ def remove_c2pa_data(media_path: str | Path) -> bool:
 
     Raises:
         ValueError: Wenn das Dateiformat nicht unterstützt wird oder die
-            Datei kein gültiges JPEG/PNG ist.
+            Datei kein gültiges JPEG/PNG/WebP ist.
     """
     path = Path(media_path)
     suffix = path.suffix.lower()
@@ -62,6 +63,8 @@ def remove_c2pa_data(media_path: str | Path) -> bool:
         new_data, removed = _strip_jpeg_app11(data)
     elif suffix == ".png":
         new_data, removed = _strip_png_cabx(data)
+    elif suffix == ".webp":
+        new_data, removed = _strip_webp_c2pa(data)
     else:
         raise ValueError(f"Nicht unterstütztes Dateiformat für C2PA-Entfernung: {suffix}")
 
@@ -160,4 +163,50 @@ def _strip_png_cabx(data: bytes) -> tuple[bytes, bool]:
         i = chunk_end
 
     return bytes(out), removed
+
+
+def _strip_webp_c2pa(data: bytes) -> tuple[bytes, bool]:
+    """Entfernt alle C2PA-Chunks aus WebP-Rohdaten.
+
+    WebP ist ein RIFF-Container:
+        "RIFF"  Größe (4 Byte, little endian)  "WEBP"  Chunk  Chunk ...
+    Jeder Chunk: Kennung (4 Byte)  Länge (4 Byte, little endian)  Daten,
+    bei ungerader Länge gefolgt von einem Füllbyte. Das C2PA-Manifest steht
+    in einem Chunk mit der Kennung "C2PA". Nach dem Entfernen wird die
+    RIFF-Größe im Kopf um die entfernten Bytes verringert.
+    """
+    if len(data) < 12 or data[0:4] != b"RIFF" or data[8:12] != b"WEBP":
+        raise ValueError("Keine gültige WebP-Datei (RIFF/WEBP-Kopf fehlt).")
+
+    out = bytearray(data[:12])
+    i = 12
+    n = len(data)
+    removed_bytes = 0
+
+    while i + 8 <= n:
+        chunk_type = data[i:i + 4]
+        length = int.from_bytes(data[i + 4:i + 8], "little")
+        padding = length % 2
+        chunk_end = i + 8 + length + padding  # Kopf + Daten + Füllbyte
+
+        if chunk_end > n:
+            # Abgeschnittene/kaputte Datei - Rest unverändert übernehmen
+            break
+
+        if chunk_type == b"C2PA":
+            removed_bytes += chunk_end - i
+        else:
+            out += data[i:chunk_end]
+
+        i = chunk_end
+
+    # Was nach dem letzten vollständigen Chunk kommt, bleibt, wie es ist.
+    out += data[i:]
+
+    if removed_bytes == 0:
+        return data, False
+
+    riff_size = int.from_bytes(data[4:8], "little")
+    out[4:8] = (riff_size - removed_bytes).to_bytes(4, "little")
+    return bytes(out), True
 

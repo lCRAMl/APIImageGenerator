@@ -134,6 +134,39 @@ MODELS: list[ModelSpec] = [
         ],
     ),
     
+    # ----- GPT Image 2.6 Sunburst - Image to Image -----
+    # Die API kann auch gif und svg; dafür bräuchte es Felder, die nur bei
+    # diesem Format gesendet werden dürfen (frame_count, frame_duration_ms,
+    # svg.model). Bewusst weggelassen, ebenso output_compression (nur bei
+    # jpeg/webp erlaubt) sowie mask_url und markup (bräuchten eigene Bild-URLs).
+    # background "transparent" geht nur mit png oder webp.
+    ModelSpec(
+        display_name="GPT Image-2.6 Sunburst - Image to Image",
+        api_model="gpt-image-2-6/sunburst-image-to-image",
+        images_field="input_urls",
+        images_is_list=True,
+        max_images=16,
+        params=[
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["auto", "1:1", "3:2", "2:3", "4:3", "3:4", "5:4", "4:5",
+                               "16:9", "9:16", "2:1", "1:2", "21:9", "9:21", "3:1", "1:3"],
+                      default="auto"),
+            ParamSpec("resolution", "Resolution", "enum",
+                      options=["1K", "2K", "4K"], default="2K"),
+            ParamSpec("quality", "Quality", "enum",
+                      options=["low", "medium", "high", "xhigh", "max", "auto"],
+                      default="high"),
+            ParamSpec("output_format", "Output Format", "enum",
+                      options=["png", "jpeg", "webp"], default="png"),
+            ParamSpec("background", "Background", "enum",
+                      options=["auto", "transparent", "opaque"], default="auto"),
+            ParamSpec("complexity", "Complexity", "enum",
+                      options=["low", "medium", "high"], default="high"),
+            ParamSpec("moderation", "Moderation", "enum",
+                      options=["low", "auto"], default="low"),
+        ],
+    ),
+
     # ----- GPT Image 2 - Image to Image -----
     ModelSpec(
         display_name="GPT Image-2 - Image to Image",
@@ -161,6 +194,29 @@ MODELS: list[ModelSpec] = [
                       options=["1:1", "2:3", "3:2"], default="3:2"),
             ParamSpec("quality", "Quality", "enum",
                       options=["medium", "high"], default="medium"),
+        ],
+    ),
+
+    # ----- Seedream 5.5 - Image to Image -----
+    # background "transparent" geht nur mit output_format png.
+    ModelSpec(
+        display_name="Seedream 5.5 - Image to Image",
+        api_model="seedream/5-5-image-to-image",
+        images_field="image_urls",
+        images_is_list=True,
+        max_images=10,
+        params=[
+            ParamSpec("aspect_ratio", "Aspect Ratio", "enum",
+                      options=["auto", "1:1", "4:3", "3:4", "16:9", "9:16",
+                               "2:3", "3:2", "21:9"],
+                      default="auto"),
+            ParamSpec("size", "Resolution", "enum",
+                      options=["1K", "1.5K", "2K"], default="2K"),
+            ParamSpec("output_format", "Output Format", "enum",
+                      options=["png", "jpeg"], default="png"),
+            ParamSpec("background", "Background", "enum",
+                      options=["auto", "transparent", "opaque"], default="auto"),
+            ParamSpec("nsfw_checker", "NSFW Checker", "bool", default=False),
         ],
     ),
 

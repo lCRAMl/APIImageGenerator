@@ -148,3 +148,34 @@ def test_upload_error_is_shown_in_full(window):
     error = "Upload-Timeout: der Server hat nicht innerhalb von 30 s geantwortet.\nDatei: a.png (2.0 MB)"
     window._on_reference_upload_failed(2, error)
     assert window.status.text() == f"Upload Referenzbild 3 fehlgeschlagen: {error}"
+
+
+def test_file_dialog_starts_in_archive_then_in_last_used_folder(window, monkeypatch, tmp_path):
+    """Erstes Öffnen im Archivordner, danach — für alle Miniaturen — im Ordner des letzten Bildes."""
+    from PyQt6.QtWidgets import QFileDialog
+
+    from ui.controls import ReferenceCard
+
+    # Kein echter Upload zu ImgBB im Test
+    monkeypatch.setattr(ReferenceCard, "_upload_to_imgbb", lambda self, path: None)
+
+    other_folder = tmp_path / "anderswo"
+    other_folder.mkdir()
+    picture = other_folder / "bild.png"
+    picture.write_bytes(b"")
+
+    start_dirs = []
+    answers = [str(picture), ""]        # 1. Dialog: Bild gewählt, 2. Dialog: abgebrochen
+
+    def fake_dialog(parent, title, start_dir, filter_text):
+        start_dirs.append(start_dir)
+        return answers.pop(0), ""
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", fake_dialog)
+
+    window.reference_cards[0].load_image_dialog()
+    window.reference_cards[3].load_image_dialog()
+
+    assert start_dirs == [str(window.archive_dir), str(other_folder)]
+    # Abbrechen ändert nichts; alle sechs Miniaturen teilen sich den Ordner.
+    assert {card.start_dir() for card in window.reference_cards} == {str(other_folder)}

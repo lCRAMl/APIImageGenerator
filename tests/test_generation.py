@@ -172,3 +172,29 @@ def test_generate_image_download_retries_then_fails(tmp_path, no_waiting, monkey
     with pytest.raises(GenerationError, match="Download nach 2 Versuchen fehlgeschlagen: zu langsam"):
         run_generation(api, tmp_path)
     assert len(calls) == 2
+
+
+def test_generate_image_removes_c2pa_from_webp(tmp_path, no_waiting, monkeypatch):
+    """Wie bei GPT Image 2.6 mit output_format webp: das Manifest ist danach weg."""
+    fixtures = Path(__file__).parent / "fixtures" / "c2pa"
+    signed = (fixtures / "signed.webp").read_bytes()
+    monkeypatch.setattr(generation, "download_file", lambda url, target, timeout_s: Path(target).write_bytes(signed))
+
+    messages = []
+    image_path = generate_image(
+        api=FakeApi([{"state": "success", "resultUrls": ["https://out/1.webp"]}]),
+        model_spec=ModelSpec("Test", "test-model"),
+        prompt="p",
+        reference_urls=[],
+        param_values={"output_format": "webp"},
+        callback_url="https://cb",
+        target_folder=tmp_path,
+        remove_c2pa=True,
+        download_attempts=1,
+        download_timeout_s=5,
+        report_status=messages.append,
+    )
+
+    assert image_path.suffix == ".webp"
+    assert "C2PA-Daten gefunden und entfernt." in messages
+    assert image_path.read_bytes() == (fixtures / "plain.webp").read_bytes()

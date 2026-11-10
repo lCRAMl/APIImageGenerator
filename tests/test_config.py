@@ -99,3 +99,36 @@ def test_upload_defaults_are_written_and_empty_url_falls_back(tmp_path):
     assert config.upload_timeout_s == 30
     text = path.read_text(encoding="utf-8")
     assert "[Upload]" in text and "upload_timeout_s = 30" in text
+
+
+def test_every_missing_entry_is_added_and_existing_values_stay(tmp_path):
+    """Nicht nur einzelne Optionen: jeder Eintrag, den save() kennt, wird ergänzt."""
+    path = tmp_path / "config.ini"
+    path.write_text(
+        "[API]\nnanobanana_api_key = abc\n"
+        "[URLs]\ngenerate_url = https://example.org/create\n"      # callback_url usw. fehlen
+        "[Upload]\nupload_timeout_s = 90\n",
+        encoding="utf-8",
+    )
+    config = AppConfig(path)
+
+    import configparser
+    written = configparser.ConfigParser()
+    written.read(path, encoding="utf-8")
+    for section, entries in config._sections().items():
+        for key in entries:
+            assert written.has_option(section, key), f"[{section}] {key} fehlt"
+    assert written.get("URLs", "callback_url") == AppConfig.DEFAULT_CALLBACK_URL
+    assert written.get("URLs", "generate_url") == "https://example.org/create"
+    assert written.get("API", "nanobanana_api_key") == "abc"
+    assert written.get("Upload", "upload_timeout_s") == "90"
+
+
+def test_complete_file_is_not_rewritten(tmp_path):
+    path = tmp_path / "config.ini"
+    AppConfig(path)                                  # legt die vollständige Datei an
+    before = path.read_bytes()
+    stamp = path.stat().st_mtime_ns
+    AppConfig(path)
+    assert path.read_bytes() == before
+    assert path.stat().st_mtime_ns == stamp
