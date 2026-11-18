@@ -5,6 +5,7 @@
 # Aufruf: python AUTOBUILD.py
 
 import subprocess
+import tempfile
 from datetime import datetime
 import os
 import shutil
@@ -149,6 +150,37 @@ def get_start_menu_programs_dir():
     return os.path.join(appdata, "Microsoft", "Windows", "Start Menu", "Programs")
 
 
+PIN_OK = "📌 Kachel vorhanden - sie startet jetzt den neuen Bau"
+PIN_HINT = ('📌 Noch keine Kachel. Einmal anheften: Start > Alle Apps > {name} > Rechtsklick > '
+            '"An Start anheften". Alte Kacheln mit Versionsnummer im Namen loesen.')
+
+
+def start_tile_present(shortcut) -> bool:
+    """Steht im Startmenue eine Kachel fuer diese Verknuepfung? Gelesen mit Export-StartLayout."""
+    with tempfile.TemporaryDirectory() as tmp:
+        layout = os.path.join(tmp, "layout.xml")
+        subprocess.run(["powershell", "-NoProfile", "-Command", f"Export-StartLayout -Path '{layout}'"],
+                       capture_output=True, timeout=60)
+        if not os.path.exists(layout):
+            return False
+        with open(layout, encoding="utf-8", errors="ignore") as fh:
+            text = fh.read().lower()
+    return "\\" + os.path.basename(str(shortcut)).lower() in text
+
+
+def check_start_tile(shortcut) -> None:
+    """Meldet, ob die Kachel steht. Anheften kann das Skript sie nicht: Windows 10 laesst
+    "An Start anheften" nur den Explorer ausfuehren, jedes andere Programm bekommt
+    "Zugriff verweigert". Weil der Name der Verknuepfung keine Version traegt, folgt eine
+    einmal angeheftete Kachel jedem weiteren Bau und startet immer die neueste Fassung.
+    """
+    name = os.path.splitext(os.path.basename(str(shortcut)))[0]
+    if start_tile_present(shortcut):
+        print(PIN_OK)
+    else:
+        print(PIN_HINT.format(name=name))
+
+
 def create_shortcut(app_name, target_exe, working_dir):
     try:
         import pythoncom
@@ -186,7 +218,8 @@ def create_shortcut(app_name, target_exe, working_dir):
         persist_file = shell_link.QueryInterface(pythoncom.IID_IPersistFile)
         persist_file.Save(shortcut_path, 0)
 
-        print(f"🔗 Windows Taskbar Shortcut created: {shortcut_path}")
+        print(f"🔗 Startmenue-Verknuepfung zeigt auf den neuen Bau: {shortcut_path}")
+        check_start_tile(shortcut_path)
 
     except Exception as e:
         print(f"⚠ Shortcut creation failed: {e}")
